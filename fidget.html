@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Resonance Chamber - Universal Dynamic Workspace</title>
+	<style>
+		:root {
+			--bg-color: #05070f;
+			--panel-bg: rgba(9, 14, 32, 0.85);
+			--outline-color: #3a4f66;
+			--text-color: #00f0ff;
+			--accent-glow: rgba(0, 240, 255, 0.25);
+			--panel-border: rgba(0, 240, 255, 0.15);
+			--input-bg: #02040a;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			background-color: var(--bg-color);
+			color: #ffffff;
+			font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow: hidden;
+			padding: 24px;
+		}
+
+		.dashboard {
+			display: flex;
+			flex-direction: row;
+			align-items: stretch;
+			gap: 24px;
+			background: rgba(4, 7, 18, 0.6);
+			padding: 24px;
+			border-radius: 20px;
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+			max-width: 1350px;
+			width: 100%;
+			height: 850px;
+		}
+
+		.zoom-panel {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: space-between;
+			gap: 15px;
+			background: var(--panel-bg);
+			border: 1px solid var(--panel-border);
+			border-radius: 14px;
+			padding: 20px 10px;
+			width: 60px;
+			backdrop-filter: blur(20px);
+		}
+
+		.zoom-label {
+			font-size: 0.68rem;
+			font-weight: 700;
+			color: var(--text-color);
+			text-transform: uppercase;
+			letter-spacing: 1.5px;
+			writing-mode: vertical-lr;
+			transform: rotate(180deg);
+		}
+
+		.zoom-slider-container {
+			flex-grow: 1;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			position: relative;
+			width: 100%;
+		}
+
+		.zoom-slider-container input[type="range"] {
+			-webkit-appearance: none;
+			background: #090e20;
+			border: 1px solid rgba(255,255,255,0.05);
+			border-radius: 4px;
+			outline: none;
+			cursor: pointer;
+			transform: rotate(270deg);
+			width: 500px;
+			position: absolute;
+		}
+
+		.zoom-slider-container input[type="range"]::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			height: 16px;
+			width: 16px;
+			border-radius: 50%;
+			background: var(--text-color);
+			box-shadow: 0 0 10px var(--text-color);
+			cursor: pointer;
+		}
+
+		.zoom-value {
+			font-family: monospace;
+			font-size: 0.75rem;
+			font-weight: bold;
+			color: #ffffff;
+		}
+
+		.main-panel {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			flex-grow: 1;
+			justify-content: space-between;
+		}
+
+		header {
+			text-align: left;
+			width: 100%;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 12px;
+		}
+
+		h1 {
+			color: #ffffff;
+			font-size: 1.4rem;
+			font-weight: 600;
+			letter-spacing: 1.5px;
+			text-transform: uppercase;
+		}
+
+		header p {
+			color: #627285;
+			font-size: 0.8rem;
+			margin-top: 2px;
+		}
+
+		.canvas-wrapper {
+			position: relative;
+			border-radius: 14px;
+			overflow: hidden;
+			border: 1px solid var(--panel-border);
+			background: #020408;
+			width: 100%;
+			flex-grow: 1;
+			margin: 16px 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		canvas {
+			display: block;
+			cursor: grab;
+			width: 100%;
+			height: 100%;
+			max-width: 700px;
+			max-height: 700px;
+		}
+
+		canvas:active {
+			cursor: grabbing;
+		}
+
+		.sidebar {
+			width: 360px;
+			background: var(--panel-bg);
+			border-radius: 14px;
+			border: 1px solid var(--panel-border);
+			padding: 20px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			backdrop-filter: blur(20px);
+			gap: 16px;
+		}
+
+		.control-group {
+			display: flex;
+			flex-direction: column;
+			gap: 14px;
+		}
+
+		.control-label {
+			color: #8295a5;
+			font-size: 0.75rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.control-label span {
+			color: var(--text-color);
+		}
+
+		.slider-container input[type="range"] {
+			-webkit-appearance: none;
+			width: 100%;
+			height: 5px;
+			background: #02040a;
+			border-radius: 3px;
+			outline: none;
+		}
+
+		.slider-container input[type="range"]::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			width: 14px;
+			height: 14px;
+			border-radius: 50%;
+			background: var(--text-color);
+			cursor: pointer;
+		}
+
+		.svg-input-container {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		textarea {
+			width: 100%;
+			height: 110px;
+			background: var(--input-bg);
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 8px;
+			color: #a5c1d6;
+			font-family: monospace;
+			font-size: 0.72rem;
+			line-height: 1.4;
+			padding: 10px;
+			resize: none;
+			outline: none;
+		}
+
+		textarea:focus {
+			border-color: var(--text-color);
+		}
+
+		.btn-reset {
+			background: rgba(0, 240, 255, 0.06);
+			color: var(--text-color);
+			border: 1px solid rgba(0, 240, 255, 0.2);
+			padding: 4px 10px;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 0.7rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			transition: all 0.2s;
+		}
+		.btn-reset:hover {
+			background: rgba(0, 240, 255, 0.15);
+			border-color: var(--text-color);
+		}
+
+		.data-display {
+			background: var(--input-bg);
+			border: 1px solid rgba(255, 255, 255, 0.04);
+			border-radius: 8px;
+			padding: 14px;
+			font-family: monospace;
+			font-size: 0.75rem;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		.data-entry {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			padding-left: 8px;
+		}
+
+		.data-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+		
+		.data-row span:first-child {
+			color: #627285;
+		}
+
+		.hex-badge {
+			background: rgba(255, 255, 255, 0.03);
+			padding: 2px 6px;
+			border-radius: 4px;
+			font-size: 0.7rem;
+			border: 1px solid rgba(255, 255, 255, 0.06);
+		}
+
+		.sidebar-footer {
+			font-size: 0.68rem;
+			color: #4a5768;
+			text-align: center;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+			padding-top: 12px;
+		}
+
+		@media (max-width: 950px) {
+			body { overflow-y: auto; height: auto; }
+			.dashboard { flex-direction: column; height: auto; }
+			.zoom-panel { flex-direction: row; width: 100%; height: 50px; }
+			.zoom-slider-container { height: auto; width: 100%; }
+			.zoom-slider-container input[type="range"] { transform: none; position: static; width: 100%; }
+			.zoom-label { writing-mode: horizontal-tb; transform: none; }
+			.sidebar { width: 100%; }
+		}
+	</style>
+</head>
+<body>
+
+	<div class="dashboard">
+		<div class="zoom-panel">
+			<div class="zoom-label">Scale Factor</div>
+			<div class="zoom-slider-container">
+				<input type="range" id="zoomSlider" min="40" max="200" value="100">
+			</div>
+			<div class="zoom-value" id="zoomVal">1.0x</div>
+		</div>
+
+		<div class="main-panel">
+			<header>
+				<h1>Fully Decoupled Resonance Engine</h1>
+				<p>Precise click coordinates deployed. Reposition your element layers cleanly.</p>
+			</header>
+
+			<div class="canvas-wrapper">
+				<canvas id="resonanceCanvas" width="700" height="700"></canvas>
+			</div>
+		</div>
+
+		<div class="sidebar">
+			<div class="control-group">
+				<div class="control-label">
+					<span>Gain Amplitude</span>
+					<span id="brightnessVal">150%</span>
+				</div>
+				<div class="slider-container">
+					<input type="range" id="brightnessSlider" min="50" max="250" value="150">
+				</div>
+				
+				<div class="svg-input-container">
+					<div class="control-label">
+						<span>SVG Path Coordinate Matrix</span>
+						<button class="btn-reset" id="btnResetSVG">Reset Default</button>
+					</div>
+					<textarea id="svgPathInput" spellcheck="false" placeholder="M x y C..."></textarea>
+				</div>
+
+				<div class="control-label">
+					<span>Emitter Nodes Spectrum Analysis</span>
+				</div>
+				<div class="data-display">
+					<div class="data-entry" id="entryHole0">
+						<div class="data-row"><span>Node 1 (Alpha):</span> <span id="valHole0">--- nm</span></div>
+						<div class="data-row"><span>Spectral Sig:</span> <span class="hex-badge" id="hexHole0">#000000</span></div>
+					</div>
+					<div class="data-entry" id="entryHole1">
+						<div class="data-row"><span>Node 2 (Beta):</span> <span id="valHole1">--- nm</span></div>
+						<div class="data-row"><span>Spectral Sig:</span> <span class="hex-badge" id="hexHole1">#000000</span></div>
+					</div>
+					<div class="data-entry" id="entryHole2">
+						<div class="data-row"><span>Node 3 (Gamma):</span> <span id="valHole2">--- nm</span></div>
+						<div class="data-row"><span>Spectral Sig:</span> <span class="hex-badge" id="hexHole2">#000000</span></div>
+					</div>
+				</div>
+			</div>
+
+			<div class="sidebar-footer">
+				Fully manual manipulation architecture enabled. Everything is repositionable.
+			</div>
+		</div>
+	</div>
+
+	<script>
+		const canvas = document.getElementById('resonanceCanvas');
+		const ctx = canvas.getContext('2d');
+		const brightnessSlider = document.getElementById('brightnessSlider');
+		const brightnessVal = document.getElementById('brightnessVal');
+		const zoomSlider = document.getElementById('zoomSlider');
+		const zoomVal = document.getElementById('zoomVal');
+		const svgPathInput = document.getElementById('svgPathInput');
+		const btnResetSVG = document.getElementById('btnResetSVG');
+
+		const WIDTH = canvas.width;
+		const HEIGHT = canvas.height;
+		const CENTER = { x: WIDTH / 2, y: HEIGHT / 2 };
+		const OUTLINE_BASE_COLOR = [24, 38, 56];
+
+		let globalBrightnessMultiplier = 1.5; 
+		let currentScaleFactor = 1.0; 
+		let activePolygonPoints = []; 
+
+		let holeCenters = [
+			{ x: 350, y: 190, angle: -Math.PI / 2, isDragging: false }, 
+			{ x: 210, y: 440, angle: (5 * Math.PI) / 6, isDragging: false }, 
+			{ x: 490, y: 440, angle: Math.PI / 6, isDragging: false }
+		];
+
+		let chassisOffset = { x: 0, y: 0 };
+		let isDraggingChassis = false;
+
+		const DEFAULT_CHASSIS_SCALE = 150;
+		const holeRadius = 20;
+
+		function generateDefaultFidgetPoints() {
+			let points = [];
+			for (let i = 0; i < 360; i++) {
+				let rad = (i * Math.PI) / 180;
+				let r = DEFAULT_CHASSIS_SCALE * (1.3 + 0.7 * Math.cos(3 * rad));
+				points.push({
+					x: CENTER.x + r * Math.cos(rad),
+					y: CENTER.y + r * Math.sin(rad)
+				});
+			}
+			return points;
+		}
+
+		const DEFAULT_3LOBE_PATH = (function() {
+			let pts = generateDefaultFidgetPoints();
+			let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+			for(let i = 1; i < pts.length; i++) {
+				d += ` L ${pts[i].x.toFixed(1)} ${pts[i].y.toFixed(1)}`;
+			}
+			d += ' Z';
+			return d;
+		})();
+
+		function setChassisGeometryFromSVGPath(dString) {
+			try {
+				if (!dString || dString.trim() === "") throw new Error();
+				
+				let pathCanvas = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+				let pathNode = document.createElementNS("http://www.w3.org/2000/svg", "path");
+				pathNode.setAttribute("d", dString);
+				pathCanvas.appendChild(pathNode);
+
+				let totalLen = pathNode.getTotalLength();
+				if (!totalLen || isNaN(totalLen)) throw new Error();
+
+				let sampleCount = 360; 
+				let parsedPoints = [];
+				for (let i = 0; i < sampleCount; i++) {
+					let fraction = (i / sampleCount) * totalLen;
+					let svgPt = pathNode.getPointAtLength(fraction);
+					parsedPoints.push({ x: svgPt.x, y: svgPt.y });
+				}
+
+				let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+				parsedPoints.forEach(p => {
+					if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x;
+					if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y;
+				});
+
+				let pWidth = maxX - minX;
+				let pHeight = maxY - minY;
+				let maxBound = Math.max(pWidth, pHeight);
+				let targetSpan = DEFAULT_CHASSIS_SCALE * 3.4; 
+				let normalizeScale = targetSpan / maxBound;
+				let parsedCenter = { x: minX + pWidth / 2, y: minY + pHeight / 2 };
+
+				activePolygonPoints = parsedPoints.map(p => {
+					return {
+						x: CENTER.x + (p.x - parsedCenter.x) * normalizeScale,
+						y: CENTER.y + (p.y - parsedCenter.y) * normalizeScale
+					};
+				});
+			} catch (err) {
+				activePolygonPoints = generateDefaultFidgetPoints();
+			}
+		}
+
+		svgPathInput.value = DEFAULT_3LOBE_PATH;
+		setChassisGeometryFromSVGPath(DEFAULT_3LOBE_PATH);
+
+		svgPathInput.addEventListener('input', (e) => setChassisGeometryFromSVGPath(e.target.value));
+		btnResetSVG.addEventListener('click', () => {
+			chassisOffset = { x: 0, y: 0 };
+			holeCenters = [
+				{ x: 350, y: 190, angle: -Math.PI / 2, isDragging: false }, 
+				{ x: 210, y: 440, angle: (5 * Math.PI) / 6, isDragging: false }, 
+				{ x: 490, y: 440, angle: Math.PI / 6, isDragging: false }
+			];
+			svgPathInput.value = DEFAULT_3LOBE_PATH;
+			setChassisGeometryFromSVGPath(DEFAULT_3LOBE_PATH);
+		});
+
+		brightnessSlider.addEventListener('input', (e) => {
+			brightnessVal.innerText = e.target.value + "%";
+			globalBrightnessMultiplier = e.target.value / 100;
+		});
+
+		zoomSlider.addEventListener('input', (e) => {
+			currentScaleFactor = e.target.value / 100;
+			zoomVal.innerText = currentScaleFactor.toFixed(1) + "x";
+		});
+
+		function rgbToHex(r, g, b) {
+			return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+		}
+
+		function wavelengthToRGB(wavelength) {
+			let r, g, b, factor;
+			if ((wavelength >= 380) && (wavelength < 440)) {
+				r = -(wavelength - 440) / (440 - 380); g = 0.0; b = 1.0;
+			} else if ((wavelength >= 440) && (wavelength < 490)) {
+				r = 0.0; g = (wavelength - 440) / (490 - 440); b = 1.0;
+			} else if ((wavelength >= 490) && (wavelength < 510)) {
+				r = 0.0; g = 1.0; b = -(wavelength - 510) / (510 - 490);
+			} else if ((wavelength >= 510) && (wavelength < 580)) {
+				r = (wavelength - 510) / (580 - 510); g = 1.0; b = 0.0;
+			} else if ((wavelength >= 580) && (wavelength < 645)) {
+				r = 1.0; g = -(wavelength - 645) / (645 - 580); b = 0.0;
+			} else if ((wavelength >= 645) && (wavelength <= 780)) {
+				r = 1.0; g = 0.0; b = 0.0;
+			} else {
+				r = 0.0; g = 0.0; b = 0.0;
+			}
+			factor = (wavelength >= 380 && wavelength < 420) ? 0.3 + 0.7 * (wavelength - 380) / (420 - 380) :
+					 (wavelength >= 420 && wavelength < 701) ? 1.0 :
+					 (wavelength >= 701 && wavelength <= 780) ? 0.3 + 0.7 * (780 - wavelength) / (780 - 701) : 0.0;
+			return [Math.round(r * factor * 255), Math.round(g * factor * 255), Math.round(b * factor * 255)];
+		}
+
+		function isPointInsidePolygon(point, vs) {
+			let x = point.x, y = point.y;
+			let inside = false;
+			for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+				let xi = vs[i].x + chassisOffset.x, yi = vs[i].y + chassisOffset.y;
+				let xj = vs[j].x + chassisOffset.x, yj = vs[j].y + chassisOffset.y;
+				if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+			}
+			return inside;
+		}
+
+		class LightSource {
+			constructor(x, y, rgbArray, targetWavelength) {
+				this.x = x; this.y = y;
+				this.rgb = rgbArray;
+				this.nativeWavelength = targetWavelength;
+				this.isDragging = false; this.radius = 11;
+				this.waveTimers = [0.0, 1.13, 2.26];
+				this.waveDuration = 3.4;
+				this.maxWaveRadius = 400;
+			}
+
+			update(dt) {
+				for (let i = 0; i < this.waveTimers.length; i++) {
+					this.waveTimers[i] += dt;
+					if (this.waveTimers[i] >= this.waveDuration) this.waveTimers[i] -= this.waveDuration;
+				}
+			}
+
+			drawWaves(innerMask, outerMask, isInside) {
+				const waveCanvas = document.createElement('canvas');
+				waveCanvas.width = WIDTH; waveCanvas.height = HEIGHT;
+				const waveCtx = waveCanvas.getContext('2d');
+
+				waveCtx.save();
+				waveCtx.translate(CENTER.x, CENTER.y);
+				waveCtx.scale(currentScaleFactor, currentScaleFactor);
+				waveCtx.translate(-CENTER.x, -CENTER.y);
+
+				this.waveTimers.forEach(timer => {
+					let progress = timer / this.waveDuration;
+					let r = 20 + (this.maxWaveRadius - 20) * progress;
+					let alpha = 0.7 * (1 - progress) * globalBrightnessMultiplier;
+					if (alpha > 0) {
+						waveCtx.beginPath();
+						waveCtx.arc(this.x, this.y, r, 0, Math.PI * 2);
+						waveCtx.lineWidth = Math.max(1.5, 6 * (1 - progress * 0.5)) / currentScaleFactor;
+						waveCtx.strokeStyle = `rgba(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]}, ${alpha})`;
+						waveCtx.stroke();
+					}
+				});
+				waveCtx.restore();
+
+				waveCanvas.getContext('2d').globalCompositeOperation = 'destination-in';
+				waveCanvas.getContext('2d').drawImage(isInside ? innerMask : outerMask, 0, 0);
+
+				ctx.save();
+				ctx.globalCompositeOperation = 'source-over';
+				ctx.drawImage(waveCanvas, 0, 0);
+				ctx.restore();
+			}
+
+			drawCore() {
+				let rX = CENTER.x + (this.x - CENTER.x) * currentScaleFactor;
+				let rY = CENTER.y + (this.y - CENTER.y) * currentScaleFactor;
+				let glowRadius = 80 * Math.sqrt(globalBrightnessMultiplier) * currentScaleFactor;
+
+				let glowGrad = ctx.createRadialGradient(rX, rY, 0, rX, rY, glowRadius);
+				glowGrad.addColorStop(0, `rgba(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]}, ${0.5 * globalBrightnessMultiplier})`);
+				glowGrad.addColorStop(1, `rgba(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]}, 0)`);
+				
+				ctx.fillStyle = glowGrad;
+				ctx.beginPath(); ctx.arc(rX, rY, glowRadius, 0, Math.PI * 2); ctx.fill();
+
+				ctx.fillStyle = '#ffffff';
+				ctx.shadowBlur = 10; ctx.shadowColor = `rgb(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]})`;
+				ctx.beginPath(); ctx.arc(rX, rY, this.radius * Math.max(0.7, currentScaleFactor), 0, Math.PI * 2); ctx.fill();
+				ctx.shadowBlur = 0;
+			}
+
+			checkClick(mx, my) {
+				let rX = CENTER.x + (this.x - CENTER.x) * currentScaleFactor;
+				let rY = CENTER.y + (this.y - CENTER.y) * currentScaleFactor;
+				if (Math.hypot(mx - rX, my - rY) <= (this.radius * currentScaleFactor) + 12) {
+					this.isDragging = true;
+					return true;
+				}
+				return false;
+			}
+
+			handleDrag(mx, my) {
+				if (this.isDragging) {
+					this.x = (mx - CENTER.x) / currentScaleFactor + CENTER.x;
+					this.y = (my - CENTER.y) / currentScaleFactor + CENTER.y;
+				}
+			}
+		}
+
+		const lights = [
+			new LightSource(350, 260, [255, 50, 50], 680),
+			new LightSource(260, 400, [50, 255, 50], 520),
+			new LightSource(440, 400, [0, 160, 255], 460)
+		];
+
+		let dragType = null; 
+		let targetObj = null;
+		let dragStartMouse = { x: 0, y: 0 };
+		let dragStartOffset = { x: 0, y: 0 };
+
+		// RESOLVED COORDINATE INTERPOLATION SUBSYSTEM
+		function getMousePos(e) {
+			const rect = canvas.getBoundingClientRect();
+			// Calculates true internal coordinates regardless of display scale configurations
+			return {
+				x: (e.clientX - rect.left) * (canvas.width / rect.width),
+				y: (e.clientY - rect.top) * (canvas.height / rect.height)
+			};
+		}
+
+		canvas.addEventListener('mousedown', (e) => {
+			const mouse = getMousePos(e);
+			
+			// 1. Check Intersection with Light Nodes
+			for (let i = lights.length - 1; i >= 0; i--) {
+				if (lights[i].checkClick(mouse.x, mouse.y)) {
+					dragType = 'light';
+					targetObj = lights[i];
+					return;
+				}
+			}
+
+			// 2. Check Intersection with Laser Hub Emitter Rings
+			for (let i = 0; i < holeCenters.length; i++) {
+				let hX = CENTER.x + (holeCenters[i].x - CENTER.x) * currentScaleFactor;
+				let hY = CENTER.y + (holeCenters[i].y - CENTER.y) * currentScaleFactor;
+				if (Math.hypot(mouse.x - hX, mouse.y - hY) <= (holeRadius * currentScaleFactor) + 10) {
+					dragType = 'hole';
+					targetObj = holeCenters[i];
+					targetObj.isDragging = true;
+					return;
+				}
+			}
+
+			// 3. Fallback to Dragging the Chassis Core Outline Body
+			dragType = 'chassis';
+			isDraggingChassis = true;
+			dragStartMouse = { x: mouse.x, y: mouse.y };
+			dragStartOffset = { x: chassisOffset.x, y: chassisOffset.y };
+		});
+
+		window.addEventListener('mousemove', (e) => {
+			const mouse = getMousePos(e);
+
+			if (dragType === 'light' && targetObj) {
+				targetObj.handleDrag(mouse.x, mouse.y);
+			} 
+			else if (dragType === 'hole' && targetObj) {
+				targetObj.x = (mouse.x - CENTER.x) / currentScaleFactor + CENTER.x;
+				targetObj.y = (mouse.y - CENTER.y) / currentScaleFactor + CENTER.y;
+				targetObj.angle = Math.atan2(targetObj.y - (CENTER.y + chassisOffset.y), targetObj.x - (CENTER.x + chassisOffset.x));
+			} 
+			else if (dragType === 'chassis' && isDraggingChassis) {
+				let dx = (mouse.x - dragStartMouse.x) / currentScaleFactor;
+				let dy = (mouse.y - dragStartMouse.y) / currentScaleFactor;
+				chassisOffset.x = dragStartOffset.x + dx;
+				chassisOffset.y = dragStartOffset.y + dy;
+			}
+		});
+
+		window.addEventListener('mouseup', () => { 
+			if (dragType === 'light' && targetObj) targetObj.isDragging = false;
+			if (dragType === 'hole' && targetObj) targetObj.isDragging = false;
+			isDraggingChassis = false;
+			dragType = null;
+			targetObj = null;
+		});
+
+		let lastTime = performance.now();
+
+		function loop(currentTime) {
+			let dt = (currentTime - lastTime) / 1000.0;
+			lastTime = currentTime;
+			if (dt > 0.1) dt = 0.1;
+
+			lights.forEach(light => light.update(dt));
+
+			ctx.fillStyle = '#03050a';
+			ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+			// GENERATE VECTOR MASKS
+			const innerMaskCanvas = document.createElement('canvas');
+			innerMaskCanvas.width = WIDTH; innerMaskCanvas.height = HEIGHT;
+			const imCtx = innerMaskCanvas.getContext('2d');
+			
+			imCtx.save();
+			imCtx.translate(CENTER.x, CENTER.y); imCtx.scale(currentScaleFactor, currentScaleFactor); imCtx.translate(-CENTER.x, -CENTER.y);
+			imCtx.fillStyle = '#ffffff';
+			imCtx.beginPath();
+			imCtx.moveTo(activePolygonPoints[0].x + chassisOffset.x, activePolygonPoints[0].y + chassisOffset.y);
+			for (let i = 1; i < activePolygonPoints.length; i++) {
+				imCtx.lineTo(activePolygonPoints[i].x + chassisOffset.x, activePolygonPoints[i].y + chassisOffset.y);
+			}
+			imCtx.closePath(); imCtx.fill();
+			holeCenters.forEach(hole => { imCtx.beginPath(); imCtx.arc(hole.x, hole.y, holeRadius, 0, Math.PI * 2); imCtx.fill(); });
+			imCtx.restore();
+
+			const outerMaskCanvas = document.createElement('canvas');
+			outerMaskCanvas.width = WIDTH; outerMaskCanvas.height = HEIGHT;
+			const omCtx = outerMaskCanvas.getContext('2d');
+			omCtx.fillStyle = '#ffffff'; omCtx.fillRect(0, 0, WIDTH, HEIGHT);
+			omCtx.globalCompositeOperation = 'destination-out';
+			omCtx.drawImage(innerMaskCanvas, 0, 0);
+
+			let rCenterX = CENTER.x + chassisOffset.x * currentScaleFactor;
+			let rCenterY = CENTER.y + chassisOffset.y * currentScaleFactor;
+			let bgGlow = ctx.createRadialGradient(rCenterX, rCenterY, 0, rCenterX, rCenterY, 350 * currentScaleFactor);
+			bgGlow.addColorStop(0, `rgba(10, 24, 50, ${0.35 * Math.min(1.5, globalBrightnessMultiplier)})`);
+			bgGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+			ctx.fillStyle = bgGlow; ctx.beginPath(); ctx.arc(rCenterX, rCenterY, 350 * currentScaleFactor, 0, Math.PI * 2); ctx.fill();
+
+			lights.forEach(light => {
+				let nodeInside = isPointInsidePolygon(light, activePolygonPoints);
+				light.drawWaves(innerMaskCanvas, outerMaskCanvas, nodeInside);
+			});
+
+			// SPECTRUM INTERPOLATION
+			let calculatedLobeData = holeCenters.map((hole, hIdx) => {
+				let totalWeight = 0, weightedWavelengthSum = 0;
+				lights.forEach(light => {
+					let distance = Math.hypot(light.x - hole.x, light.y - hole.y);
+					let weight = 1 / (Math.pow(distance, 2.2) + 0.01);
+					weightedWavelengthSum += light.nativeWavelength * weight;
+					totalWeight += weight;
+				});
+
+				let targetWavelength = weightedWavelengthSum / totalWeight;
+				if(targetWavelength < 380) targetWavelength = 380;
+				if(targetWavelength > 780) targetWavelength = 780;
+
+				let [specR, specG, specB] = wavelengthToRGB(targetWavelength);
+				let currentHexValue = rgbToHex(specR, specG, specB);
+				
+				document.getElementById(`valHole${hIdx}`).innerText = Math.round(targetWavelength) + " nm";
+				document.getElementById(`hexHole${hIdx}`).innerText = currentHexValue;
+				document.getElementById(`entryHole${hIdx}`).style.borderLeft = `3px solid rgb(${specR}, ${specG}, ${specB})`;
+
+				return { hole, rgb: [specR, specG, specB] };
+			});
+
+			// LASER PROJECTORS
+			calculatedLobeData.forEach(data => {
+				let [r, g, b] = data.rgb;
+				let rStartX = CENTER.x + (data.hole.x - CENTER.x) * currentScaleFactor;
+				let rStartY = CENTER.y + (data.hole.y - CENTER.y) * currentScaleFactor;
+				
+				let beamLength = 1000; 
+				let endX = rStartX + Math.cos(data.hole.angle) * beamLength;
+				let endY = rStartY + Math.sin(data.hole.angle) * beamLength;
+
+				ctx.save();
+				ctx.globalCompositeOperation = 'screen';
+				ctx.shadowBlur = 20 * currentScaleFactor; ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
+				ctx.lineWidth = 10 * globalBrightnessMultiplier * currentScaleFactor;
+				ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
+				ctx.beginPath(); ctx.moveTo(rStartX, rStartY); ctx.lineTo(endX, endY); ctx.stroke();
+
+				ctx.lineWidth = 4 * globalBrightnessMultiplier * currentScaleFactor;
+				ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.7)`; ctx.stroke();
+
+				ctx.shadowBlur = 0; ctx.lineWidth = Math.max(1, 1.5 * currentScaleFactor);
+				ctx.strokeStyle = '#ffffff'; ctx.stroke();
+				ctx.restore();
+			});
+
+			// WALL REFLECTORS
+			ctx.lineWidth = 10 * currentScaleFactor;
+			ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+
+			for (let i = 0; i < activePolygonPoints.length; i++) {
+				let p1 = activePolygonPoints[i], p2 = activePolygonPoints[(i + 1) % activePolygonPoints.length];
+				let rP1X = CENTER.x + (p1.x + chassisOffset.x - CENTER.x) * currentScaleFactor;
+				let rP1Y = CENTER.y + (p1.y + chassisOffset.y - CENTER.y) * currentScaleFactor;
+				let rP2X = CENTER.x + (p2.x + chassisOffset.x - CENTER.x) * currentScaleFactor;
+				let rP2Y = CENTER.y + (p2.y + chassisOffset.y - CENTER.y) * currentScaleFactor;
+
+				let midX = (p1.x + p2.x) / 2 + chassisOffset.x;
+				let midY = (p1.y + p2.y) / 2 + chassisOffset.y;
+				let netWavelength = 0, totalWeight = 0;
+
+				lights.forEach(light => {
+					let d = Math.hypot(light.x - midX, light.y - midY);
+					let weight = 1 / (Math.pow(d, 2.0) + 0.1);
+					netWavelength += light.nativeWavelength * weight;
+					totalWeight += weight;
+				});
+
+				let [r, g, b] = wavelengthToRGB(netWavelength / totalWeight);
+				let closestDist = Math.min(...lights.map(l => Math.hypot(l.x - midX, l.y - midY)));
+				let factor = Math.min(1, Math.max(0, 1 - (closestDist / 220))) * globalBrightnessMultiplier;
+
+				r = Math.round(OUTLINE_BASE_COLOR[0] + (r - OUTLINE_BASE_COLOR[0]) * factor);
+				g = Math.round(OUTLINE_BASE_COLOR[1] + (g - OUTLINE_BASE_COLOR[1]) * factor);
+				b = Math.round(OUTLINE_BASE_COLOR[2] + (b - OUTLINE_BASE_COLOR[2]) * factor);
+
+				ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+				ctx.beginPath(); ctx.moveTo(rP1X, rP1Y); ctx.lineTo(rP2X, rP2Y); ctx.stroke();
+			}
+
+			// RE-RENDER EMITTER HUD INTERFACES
+			calculatedLobeData.forEach((data) => {
+				let [specR, specG, specB] = data.rgb;
+				let hole = data.hole;
+				let rX = CENTER.x + (hole.x - CENTER.x) * currentScaleFactor;
+				let rY = CENTER.y + (hole.y - CENTER.y) * currentScaleFactor;
+				let sHoleRadius = holeRadius * currentScaleFactor;
+
+				let closestLightDist = Math.min(...lights.map(l => Math.hypot(l.x - hole.x, l.y - hole.y)));
+				let edgeIllumination = Math.min(1, Math.max(0, 1 - (closestLightDist / 220)) * globalBrightnessMultiplier);
+
+				let outR = Math.round(OUTLINE_BASE_COLOR[0] + (specR - OUTLINE_BASE_COLOR[0]) * edgeIllumination);
+				let outG = Math.round(OUTLINE_BASE_COLOR[1] + (specG - OUTLINE_BASE_COLOR[1]) * edgeIllumination);
+				let outB = Math.round(OUTLINE_BASE_COLOR[2] + (specB - OUTLINE_BASE_COLOR[2]) * edgeIllumination);
+
+				ctx.lineWidth = 3 * currentScaleFactor;
+				ctx.strokeStyle = `rgb(${outR}, ${outG}, ${outB})`;
+				ctx.beginPath(); ctx.arc(rX, rY, sHoleRadius + (3 * currentScaleFactor), 0, Math.PI * 2); ctx.stroke();
+
+				ctx.fillStyle = `rgb(${Math.round(8 + (specR - 8) * edgeIllumination * 0.35)}, ${Math.round(12 + (specG - 12) * edgeIllumination * 0.35)}, ${Math.round(24 + (specB - 24) * edgeIllumination * 0.35)})`;
+				ctx.beginPath(); ctx.arc(rX, rY, sHoleRadius, 0, Math.PI * 2); ctx.fill();
+				
+				if (edgeIllumination > 0.01) {
+					let innerGlow = ctx.createRadialGradient(rX, rY, 1, rX, rY, sHoleRadius);
+					innerGlow.addColorStop(0, `rgba(${specR}, ${specG}, ${specB}, ${edgeIllumination * 0.6})`);
+					innerGlow.addColorStop(1, 'rgba(0,0,0,0)');
+					ctx.fillStyle = innerGlow; ctx.beginPath(); ctx.arc(rX, rY, sHoleRadius, 0, Math.PI * 2); ctx.fill();
+				}
+			});
+
+			lights.forEach(light => light.drawCore());
+			requestAnimationFrame(loop);
+		}
+
+		requestAnimationFrame(loop);
+	</script>
+</body>
+</html>
