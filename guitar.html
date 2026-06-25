@@ -1,1082 +1,750 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Resonance Chamber - Sonic Dynamic Workspace</title>
-	<style>
-		:root {
-			--bg-color: #05070f;
-			--panel-bg: rgba(9, 14, 32, 0.85);
-			--outline-color: #3a4f66;
-			--text-color: #00f0ff;
-			--accent-glow: rgba(0, 240, 255, 0.25);
-			--panel-border: rgba(0, 240, 255, 0.15);
-			--input-bg: #02040a;
-		}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resonance Chamber - Sonic Dynamic Workspace</title>
+<style>
+:root {
+--bg-color: #05070f;
+--panel-bg: rgba(9, 14, 32, 0.85);
+--outline-color: #3a4f66;
+--text-color: #00f0ff;
+--accent-glow: rgba(0, 240, 255, 0.25);
+--panel-border: rgba(0, 240, 255, 0.15);
+--input-bg: #02040a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+background-color: var(--bg-color);
+color: #ffffff;
+font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+overflow: hidden;
+padding: 24px;
+}
+.dashboard {
+display: flex;
+flex-direction: row;
+align-items: stretch;
+gap: 24px;
+background: rgba(4, 7, 18, 0.6);
+padding: 24px;
+border-radius: 20px;
+border: 1px solid rgba(255, 255, 255, 0.05);
+box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+max-width: 1400px;
+width: 100%;
+height: 880px;
+}
+.zoom-panel { 
+display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 15px;
+background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 14px; padding: 20px 10px;
+width: 60px; backdrop-filter: blur(20px);
+}
+.zoom-label { font-size: 0.68rem; font-weight: 700; color: var(--text-color); text-transform: uppercase; letter-spacing: 1.5px; writing-mode: vertical-lr; transform: rotate(180deg); }
+.zoom-slider-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+.zoom-slider-container input[type="range"] {
+-webkit-appearance: none; background: #090e20; border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; outline: none; cursor: pointer;
+transform: rotate(270deg); width: 500px; position: absolute;
+}
+.zoom-slider-container input[type="range"]::-webkit-slider-thumb {
+-webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--text-color); box-shadow: 0 0 10px var(--text-color); cursor: pointer;
+}
+.zoom-value { font-family: monospace; font-size: 0.75rem; font-weight: bold; color: #ffffff; }
 
-		* {
-			box-sizing: border-box;
-			margin: 0;
-			padding: 0;
-		}
+.main-panel { display: flex; flex-direction: column; align-items: center; flex-grow: 1; justify-content: space-between; }
+header { display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 12px; }
+h1 { color: #ffffff; font-size: 1.4rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }
+header p { color: #627285; font-size: 0.8rem; margin-top: 2px; }
+.btn-audio-toggle {
+background: #00f0ff; color: #05070f; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;
+font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); transition: all 0.2s ease;
+}
+.btn-audio-toggle.running { background: #ff0055; color: #ffffff; box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); }
+.btn-audio-toggle:hover { transform: translateY(-2px); }
 
-		body {
-			background-color: var(--bg-color);
-			color: #ffffff;
-			font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-			min-height: 100vh;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			overflow: hidden;
-			padding: 24px;
-		}
+.canvas-wrapper {
+position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--panel-border);
+background: #020408; width: 100%; flex-grow: 1; margin: 16px 0; display: flex; align-items: center; justify-content: center;
+}
+canvas { display: block; cursor: grab; width: 100%; height: 100%; max-width: 720px; max-height: 720px; }
+canvas:active { cursor: grabbing; }
 
-		.dashboard {
-			display: flex;
-			flex-direction: row;
-			align-items: stretch;
-			gap: 24px;
-			background: rgba(4, 7, 18, 0.6);
-			padding: 24px;
-			border-radius: 20px;
-			border: 1px solid rgba(255, 255, 255, 0.05);
-			box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
-			max-width: 1350px;
-			width: 100%;
-			height: 850px;
-		}
+.sidebar {
+width: 380px; background: var(--panel-bg); border-radius: 14px; border: 1px solid var(--panel-border);
+padding: 20px; display: flex; flex-direction: column; gap: 18px; backdrop-filter: blur(20px);
+overflow-y: auto;
+}
+.control-group { display: flex; flex-direction: column; gap: 14px; }
+.control-label {
+color: #8295a5; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+display: flex; justify-content: space-between; align-items: center;
+}
+.control-label span { color: var(--text-color); }
+.slider-container input[type="range"] {
+-webkit-appearance: none; width: 100%; height: 5px; background: #02040a; border-radius: 3px; outline: none;
+}
+.slider-container input[type="range"]::-webkit-slider-thumb {
+-webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--text-color); cursor: pointer;
+}
+.svg-input-container { display: flex; flex-direction: column; gap: 8px; }
+textarea {
+width: 100%; height: 60px; background: var(--input-bg); border: 1px solid rgba(255, 255, 255, 0.08);
+border-radius: 8px; color: #a5c1d6; font-family: monospace; font-size: 0.72rem; line-height: 1.4;
+padding: 10px; resize: none; outline: none;
+}
+textarea:focus { border-color: var(--text-color); }
 
-		.zoom-panel {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: space-between;
-			gap: 15px;
-			background: var(--panel-bg);
-			border: 1px solid var(--panel-border);
-			border-radius: 14px;
-			padding: 20px 10px;
-			width: 60px;
-			backdrop-filter: blur(20px);
-		}
+.btn-small {
+padding: 4px 10px; font-size: 0.7rem; border-radius: 5px; cursor: pointer; font-weight: 600;
+}
+.btn-add { background: #00ff88; color: #05070f; border: none; }
+.btn-remove { background: #ff3366; color: #fff; border: none; align-self: flex-end; }
+.btn-reset { background: rgba(0, 240, 255, 0.06); color: var(--text-color); border: 1px solid rgba(0, 240, 255, 0.2); }
 
-		.zoom-label {
-			font-size: 0.68rem;
-			font-weight: 700;
-			color: var(--text-color);
-			text-transform: uppercase;
-			letter-spacing: 1.5px;
-			writing-mode: vertical-lr;
-			transform: rotate(180deg);
-		}
+.data-display {
+background: var(--input-bg); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 8px;
+padding: 14px; font-family: monospace; font-size: 0.75rem; display: flex; flex-direction: column; gap: 12px;
+max-height: 240px; overflow-y: auto;
+}
+.data-entry {
+display: flex; flex-direction: column; gap: 6px; padding-left: 8px; border-left: 3px solid #3a4f66;
+background: rgba(255, 255, 255, 0.01); padding: 6px; border-radius: 0 6px 6px 0;
+}
+.data-row { display: flex; justify-content: space-between; align-items: center; }
+.data-row span:first-child { color: #627285; }
+.tone-select, .flow-select {
+background: #090e20; border: 1px solid rgba(255, 255, 255, 0.1); color: #ffffff;
+font-family: monospace; font-size: 0.7rem; border-radius: 4px; padding: 2px 6px; outline: none;
+}
+.freq-input {
+background: #090e20; border: 1px solid rgba(0, 240, 255, 0.3); color: #00f0ff;
+font-family: monospace; font-size: 0.75rem; border-radius: 4px; padding: 2px 4px; outline: none;
+width: 70px; text-align: right;
+}
+.hex-badge { background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; border: 1px solid rgba(255,255,255,0.06); }
 
-		.zoom-slider-container {
-			flex-grow: 1;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			position: relative;
-			width: 100%;
-		}
+.sidebar-footer { font-size: 0.68rem; color: #4a5768; text-align: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; margin-top: auto; }
 
-		.zoom-slider-container input[type="range"] {
-			-webkit-appearance: none;
-			background: #090e20;
-			border: 1px solid rgba(255,255,255,0.05);
-			border-radius: 4px;
-			outline: none;
-			cursor: pointer;
-			transform: rotate(270deg);
-			width: 500px;
-			position: absolute;
-		}
-
-		.zoom-slider-container input[type="range"]::-webkit-slider-thumb {
-			-webkit-appearance: none;
-			height: 16px;
-			width: 16px;
-			border-radius: 50%;
-			background: var(--text-color);
-			box-shadow: 0 0 10px var(--text-color);
-			cursor: pointer;
-		}
-
-		.zoom-value {
-			font-family: monospace;
-			font-size: 0.75rem;
-			font-weight: bold;
-			color: #ffffff;
-		}
-
-		.main-panel {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			flex-grow: 1;
-			justify-content: space-between;
-		}
-
-		header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			width: 100%;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-			padding-bottom: 12px;
-		}
-
-		.header-text {
-			text-align: left;
-		}
-
-		h1 {
-			color: #ffffff;
-			font-size: 1.4rem;
-			font-weight: 600;
-			letter-spacing: 1.5px;
-			text-transform: uppercase;
-		}
-
-		header p {
-			color: #627285;
-			font-size: 0.8rem;
-			margin-top: 2px;
-		}
-
-		.btn-audio-toggle {
-			background: #00f0ff;
-			color: #05070f;
-			border: none;
-			padding: 10px 20px;
-			border-radius: 8px;
-			cursor: pointer;
-			font-size: 0.85rem;
-			font-weight: 700;
-			text-transform: uppercase;
-			letter-spacing: 1px;
-			box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
-			transition: all 0.2s ease;
-		}
-
-		.btn-audio-toggle.running {
-			background: #ff0055;
-			color: #ffffff;
-			box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
-		}
-
-		.btn-audio-toggle:hover {
-			transform: translateY(-2px);
-		}
-
-		.canvas-wrapper {
-			position: relative;
-			border-radius: 14px;
-			overflow: hidden;
-			border: 1px solid var(--panel-border);
-			background: #020408;
-			width: 100%;
-			flex-grow: 1;
-			margin: 16px 0;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-		}
-
-		canvas {
-			display: block;
-			cursor: grab;
-			width: 100%;
-			height: 100%;
-			max-width: 700px;
-			max-height: 700px;
-		}
-
-		canvas:active {
-			cursor: grabbing;
-		}
-
-		.sidebar {
-			width: 360px;
-			background: var(--panel-bg);
-			border-radius: 14px;
-			border: 1px solid var(--panel-border);
-			padding: 20px;
-			display: flex;
-			flex-direction: column;
-			justify-content: space-between;
-			backdrop-filter: blur(20px);
-			gap: 16px;
-		}
-
-		.control-group {
-			display: flex;
-			flex-direction: column;
-			gap: 14px;
-		}
-
-		.control-label {
-			color: #8295a5;
-			font-size: 0.75rem;
-			font-weight: 600;
-			text-transform: uppercase;
-			letter-spacing: 1px;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-		}
-
-		.control-label span {
-			color: var(--text-color);
-		}
-
-		.slider-container input[type="range"] {
-			-webkit-appearance: none;
-			width: 100%;
-			height: 5px;
-			background: #02040a;
-			border-radius: 3px;
-			outline: none;
-		}
-
-		.slider-container input[type="range"]::-webkit-slider-thumb {
-			-webkit-appearance: none;
-			width: 14px;
-			height: 14px;
-			border-radius: 50%;
-			background: var(--text-color);
-			cursor: pointer;
-		}
-
-		.svg-input-container {
-			display: flex;
-			flex-direction: column;
-			gap: 8px;
-		}
-
-		textarea {
-			width: 100%;
-			height: 110px;
-			background: var(--input-bg);
-			border: 1px solid rgba(255, 255, 255, 0.08);
-			border-radius: 8px;
-			color: #a5c1d6;
-			font-family: monospace;
-			font-size: 0.72rem;
-			line-height: 1.4;
-			padding: 10px;
-			resize: none;
-			outline: none;
-		}
-
-		textarea:focus {
-			border-color: var(--text-color);
-		}
-
-		.btn-reset {
-			background: rgba(0, 240, 255, 0.06);
-			color: var(--text-color);
-			border: 1px solid rgba(0, 240, 255, 0.2);
-			padding: 4px 10px;
-			border-radius: 5px;
-			cursor: pointer;
-			font-size: 0.7rem;
-			font-weight: 600;
-			text-transform: uppercase;
-			transition: all 0.2s;
-		}
-		.btn-reset:hover {
-			background: rgba(0, 240, 255, 0.15);
-			border-color: var(--text-color);
-		}
-
-		.data-display {
-			background: var(--input-bg);
-			border: 1px solid rgba(255, 255, 255, 0.04);
-			border-radius: 8px;
-			padding: 14px;
-			font-family: monospace;
-			font-size: 0.75rem;
-			display: flex;
-			flex-direction: column;
-			gap: 12px;
-		}
-
-		.data-entry {
-			display: flex;
-			flex-direction: column;
-			gap: 4px;
-			padding-left: 8px;
-			border-left: 3px solid #3a4f66;
-		}
-
-		.data-row {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-		}
-		
-		.data-row span:first-child {
-			color: #627285;
-		}
-
-		.tone-select {
-			background: #090e20;
-			border: 1px solid rgba(255, 255, 255, 0.1);
-			color: #ffffff;
-			font-family: monospace;
-			font-size: 0.7rem;
-			border-radius: 4px;
-			padding: 1px 4px;
-			outline: none;
-			cursor: pointer;
-		}
-
-		.tone-select:focus {
-			border-color: var(--text-color);
-		}
-
-		.hex-badge {
-			background: rgba(255, 255, 255, 0.03);
-			padding: 2px 6px;
-			border-radius: 4px;
-			font-size: 0.7rem;
-			border: 1px solid rgba(255, 255, 255, 0.06);
-			color: #ffffff;
-		}
-
-		.sidebar-footer {
-			font-size: 0.68rem;
-			color: #4a5768;
-			text-align: center;
-			border-top: 1px solid rgba(255, 255, 255, 0.05);
-			padding-top: 12px;
-		}
-
-		@media (max-width: 950px) {
-			body { overflow-y: auto; height: auto; }
-			.dashboard { flex-direction: column; height: auto; }
-			.zoom-panel { flex-direction: row; width: 100%; height: 50px; }
-			.zoom-slider-container { height: auto; width: 100%; }
-			.zoom-slider-container input[type="range"] { transform: none; position: static; width: 100%; }
-			.zoom-label { writing-mode: horizontal-tb; transform: none; }
-			.sidebar { width: 100%; }
-		}
-	</style>
+@media (max-width: 950px) {
+body { overflow-y: auto; height: auto; }
+.dashboard { flex-direction: column; height: auto; }
+.zoom-panel { flex-direction: row; width: 100%; height: 50px; }
+.zoom-slider-container { height: auto; width: 100%; }
+.zoom-slider-container input[type="range"] { transform: none; position: static; width: 100%; }
+.zoom-label { writing-mode: horizontal-tb; transform: none; }
+.sidebar { width: 100%; height: auto; max-height: none; }
+}
+</style>
 </head>
 <body>
-
-	<div class="dashboard">
-		<div class="zoom-panel">
-			<div class="zoom-label">Scale Factor</div>
-			<div class="zoom-slider-container">
-				<input type="range" id="zoomSlider" min="40" max="200" value="100">
-			</div>
-			<div class="zoom-value" id="zoomVal">1.0x</div>
-		</div>
-
-		<div class="main-panel">
-			<header>
-				<div class="header-text">
-					<h1>Fully Decoupled Acoustic Resonance Engine</h1>
-					<p>Position the audio node spectrum generators to manipulate resonant node patterns and true panoramic stereo fields.</p>
-				</div>
-				<button class="btn-audio-toggle" id="btnAudioToggle">Start Engine</button>
-			</header>
-
-			<div class="canvas-wrapper">
-				<canvas id="resonanceCanvas" width="700" height="700"></canvas>
-			</div>
-		</div>
-
-		<div class="sidebar">
-			<div class="control-group">
-				<div class="control-label">
-					<span>Master Gain Output</span>
-					<span id="brightnessVal">50%</span>
-				</div>
-				<div class="slider-container">
-					<input type="range" id="brightnessSlider" min="0" max="100" value="50">
-				</div>
-				
-				<div class="svg-input-container">
-					<div class="control-label">
-						<span>Acoustic Isolation Geometry Matrix</span>
-						<button class="btn-reset" id="btnResetSVG">Reset Default</button>
-					</div>
-					<textarea id="svgPathInput" spellcheck="false" placeholder="M x y C..."></textarea>
-				</div>
-
-				<div class="control-label">
-					<span>Acoustic Nodes Spectrum Analysis</span>
-				</div>
-				<div class="data-display">
-					<div class="data-entry" id="entryHole0">
-						<div class="data-row"><span>Node 1 (Alpha Apex):</span> <span id="valHole0">--- Hz</span></div>
-						<div class="data-row">
-							<span>Wave Type:</span>
-							<select class="tone-select" data-voice="0">
-								<option value="sine" selected>Sine</option>
-								<option value="square">Square</option>
-								<option value="triangle">Triangle</option>
-								<option value="sawtooth">Sawtooth</option>
-							</select>
-						</div>
-						<div class="data-row"><span>Spatial Panorama:</span> <span id="panHole0">Center</span></div>
-						<div class="data-row"><span>Acoustic Amp:</span> <span class="hex-badge" id="hexHole0">0.00</span></div>
-					</div>
-					<div class="data-entry" id="entryHole1">
-						<div class="data-row"><span>Node 2 (Beta Left):</span> <span id="valHole1">--- Hz</span></div>
-						<div class="data-row">
-							<span>Wave Type:</span>
-							<select class="tone-select" data-voice="1">
-								<option value="sine" selected>Sine</option>
-								<option value="square">Square</option>
-								<option value="triangle">Triangle</option>
-								<option value="sawtooth">Sawtooth</option>
-							</select>
-						</div>
-						<div class="data-row"><span>Spatial Panorama:</span> <span id="panHole1">Center</span></div>
-						<div class="data-row"><span>Acoustic Amp:</span> <span class="hex-badge" id="hexHole1">0.00</span></div>
-					</div>
-					<div class="data-entry" id="entryHole2">
-						<div class="data-row"><span>Node 3 (Gamma Right):</span> <span id="valHole2">--- Hz</span></div>
-						<div class="data-row">
-							<span>Wave Type:</span>
-							<select class="tone-select" data-voice="2">
-								<option value="sine" selected>Sine</option>
-								<option value="square">Square</option>
-								<option value="triangle">Triangle</option>
-								<option value="sawtooth">Sawtooth</option>
-							</select>
-						</div>
-						<div class="data-row"><span>Spatial Panorama:</span> <span id="panHole2">Center</span></div>
-						<div class="data-row"><span>Acoustic Amp:</span> <span class="hex-badge" id="hexHole2">0.00</span></div>
-					</div>
-				</div>
-			</div>
-
-			<div class="sidebar-footer">
-				Fully manual spatial architecture enabled. Drag elements horizontally to alter stereo imaging.
-			</div>
-		</div>
-	</div>
-
-	<script>
-		// --- Web Audio API Infrastructure Setup ---
-		let audioCtx = null;
-		let masterGain = null;
-		let isAudioRunning = false;
-
-		// Expanded architecture to allow deep panning and stereo matrix generation
-		class SoundVoice {
-			constructor(frequency, fallbackColor) {
-				this.baseFrequency = frequency;
-				this.color = fallbackColor;
-				this.osc = null;
-				this.gainNode = null;
-				this.pannerNode = null;
-				this.waveType = 'sine';
-			}
-
-			init(ctx, destination) {
-				this.osc = ctx.createOscillator();
-				this.gainNode = ctx.createGain();
-				this.pannerNode = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-				
-				this.osc.type = this.waveType;
-				this.osc.frequency.setValueAtTime(this.baseFrequency, ctx.currentTime);
-				this.gainNode.gain.setValueAtTime(0, ctx.currentTime); // Muted initially
-
-				this.osc.connect(this.gainNode);
-				
-				if (this.pannerNode) {
-					this.pannerNode.pan.setValueAtTime(0, ctx.currentTime);
-					this.gainNode.connect(this.pannerNode);
-					this.pannerNode.connect(destination);
-				} else {
-					this.gainNode.connect(destination);
-				}
-				
-				this.osc.start();
-			}
-
-			setVolume(volume, ctx) {
-				if (!this.gainNode) return;
-				this.gainNode.gain.setTargetAtTime(volume, ctx.currentTime, 0.03);
-			}
-
-			setPitch(freq, ctx) {
-				if (!this.osc) return;
-				this.osc.frequency.setTargetAtTime(freq, ctx.currentTime, 0.05);
-			}
-
-			setPan(panValue, ctx) {
-				if (!this.pannerNode) return;
-				// Clamped soundstage spectrum balance limits
-				const clampedPan = Math.max(-1, Math.min(1, panValue));
-				this.pannerNode.pan.setTargetAtTime(clampedPan, ctx.currentTime, 0.04);
-			}
-
-			setWaveType(type) {
-				this.waveType = type;
-				if (this.osc) {
-					this.osc.type = type;
-				}
-			}
-		}
-
-		const audioVoices = [
-			new SoundVoice(220, [240, 0, 100]),  // Voice 1 Bass Tone
-			new SoundVoice(440, [0, 240, 180]),  // Voice 2 Mid Tone
-			new SoundVoice(880, [180, 0, 255])   // Voice 3 Treble Tone
-		];
-
-		function toggleAudioEngine() {
-			if (!audioCtx) {
-				audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-				masterGain = audioCtx.createGain();
-				masterGain.gain.setValueAtTime(globalMasterVolume, audioCtx.currentTime);
-				masterGain.connect(audioCtx.destination);
-
-				audioVoices.forEach(voice => voice.init(audioCtx, masterGain));
-			}
-
-			if (audioCtx.state === 'suspended') {
-				audioCtx.resume();
-				document.getElementById('btnAudioToggle').innerText = "Stop Engine";
-				document.getElementById('btnAudioToggle').classList.add('running');
-				isAudioRunning = true;
-			} else if (audioCtx.state === 'running') {
-				audioCtx.suspend();
-				document.getElementById('btnAudioToggle').innerText = "Start Engine";
-				document.getElementById('btnAudioToggle').classList.remove('running');
-				isAudioRunning = false;
-			}
-		}
-
-		document.getElementById('btnAudioToggle').addEventListener('click', toggleAudioEngine);
-
-		document.querySelectorAll('.tone-select').forEach(select => {
-			select.addEventListener('change', (e) => {
-				const voiceIdx = parseInt(e.target.getAttribute('data-voice'));
-				const selectedWave = e.target.value;
-				if (audioVoices[voiceIdx]) {
-					audioVoices[voiceIdx].setWaveType(selectedWave);
-				}
-			});
-		});
-
-		// --- Interface & Canvas Rendering Graphics Engine ---
-		const canvas = document.getElementById('resonanceCanvas');
-		const ctx = canvas.getContext('2d');
-		const brightnessSlider = document.getElementById('brightnessSlider');
-		const brightnessVal = document.getElementById('brightnessVal');
-		const zoomSlider = document.getElementById('zoomSlider');
-		const zoomVal = document.getElementById('zoomVal');
-		const svgPathInput = document.getElementById('svgPathInput');
-		const btnResetSVG = document.getElementById('btnResetSVG');
-
-		const WIDTH = canvas.width;
-		const HEIGHT = canvas.height;
-		const CENTER = { x: WIDTH / 2, y: HEIGHT / 2 };
-		const OUTLINE_BASE_COLOR = [24, 38, 56];
-
-		let globalMasterVolume = 0.5; 
-		let currentScaleFactor = 1.0; 
-		let activePolygonPoints = []; 
-
-		let holeCenters = [
-			{ x: 350, y: 190, angle: -Math.PI / 2, isDragging: false }, 
-			{ x: 210, y: 440, angle: (5 * Math.PI) / 6, isDragging: false }, 
-			{ x: 490, y: 440, angle: Math.PI / 6, isDragging: false }
-		];
-
-		let chassisOffset = { x: 0, y: 0 };
-		let isDraggingChassis = false;
-
-		const DEFAULT_CHASSIS_SCALE = 150;
-		const holeRadius = 20;
-
-		function generateDefaultFidgetPoints() {
-			let points = [];
-			for (let i = 0; i < 360; i++) {
-				let rad = (i * Math.PI) / 180;
-				let r = DEFAULT_CHASSIS_SCALE * (1.3 + 0.7 * Math.cos(3 * rad));
-				points.push({
-					x: CENTER.x + r * Math.cos(rad),
-					y: CENTER.y + r * Math.sin(rad)
-				});
-			}
-			return points;
-		}
-
-		const DEFAULT_3LOBE_PATH = (function() {
-			let pts = generateDefaultFidgetPoints();
-			let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
-			for(let i = 1; i < pts.length; i++) {
-				d += ` L ${pts[i].x.toFixed(1)} ${pts[i].y.toFixed(1)}`;
-			}
-			d += ' Z';
-			return d;
-		})();
-
-		function setChassisGeometryFromSVGPath(dString) {
-			try {
-				if (!dString || dString.trim() === "") throw new Error();
-				
-				let pathCanvas = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-				let pathNode = document.createElementNS("http://www.w3.org/2000/svg", "path");
-				pathNode.setAttribute("d", dString);
-				pathCanvas.appendChild(pathNode);
-
-				let totalLen = pathNode.getTotalLength();
-				if (!totalLen || isNaN(totalLen)) throw new Error();
-
-				let sampleCount = 360; 
-				let parsedPoints = [];
-				for (let i = 0; i < sampleCount; i++) {
-					let fraction = (i / sampleCount) * totalLen;
-					let svgPt = pathNode.getPointAtLength(fraction);
-					parsedPoints.push({ x: svgPt.x, y: svgPt.y });
-				}
-
-				let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-				parsedPoints.forEach(p => {
-					if(p.x < minX) minX = p.x; if(p.x > maxX) maxX = p.x;
-					if(p.y < minY) minY = p.y; if(p.y > maxY) maxY = p.y;
-				});
-
-				let pWidth = maxX - minX;
-				let pHeight = maxY - minY;
-				let maxBound = Math.max(pWidth, pHeight);
-				let targetSpan = DEFAULT_CHASSIS_SCALE * 3.4; 
-				let normalizeScale = targetSpan / maxBound;
-				let parsedCenter = { x: minX + pWidth / 2, y: minY + pHeight / 2 };
-
-				activePolygonPoints = parsedPoints.map(p => {
-					return {
-						x: CENTER.x + (p.x - parsedCenter.x) * normalizeScale,
-						y: CENTER.y + (p.y - parsedCenter.y) * normalizeScale
-					};
-				});
-			} catch (err) {
-				activePolygonPoints = generateDefaultFidgetPoints();
-			}
-		}
-
-		svgPathInput.value = DEFAULT_3LOBE_PATH;
-		setChassisGeometryFromSVGPath(DEFAULT_3LOBE_PATH);
-
-		svgPathInput.addEventListener('input', (e) => setChassisGeometryFromSVGPath(e.target.value));
-		btnResetSVG.addEventListener('click', () => {
-			chassisOffset = { x: 0, y: 0 };
-			holeCenters = [
-				{ x: 350, y: 190, angle: -Math.PI / 2, isDragging: false }, 
-				{ x: 210, y: 440, angle: (5 * Math.PI) / 6, isDragging: false }, 
-				{ x: 490, y: 440, angle: Math.PI / 6, isDragging: false }
-			];
-			svgPathInput.value = DEFAULT_3LOBE_PATH;
-			setChassisGeometryFromSVGPath(DEFAULT_3LOBE_PATH);
-			
-			document.querySelectorAll('.tone-select').forEach((select, idx) => {
-				select.value = 'sine';
-				if (audioVoices[idx]) audioVoices[idx].setWaveType('sine');
-			});
-		});
-
-		brightnessSlider.addEventListener('input', (e) => {
-			brightnessVal.innerText = e.target.value + "%";
-			globalMasterVolume = e.target.value / 100;
-			if (masterGain && audioCtx) {
-				masterGain.gain.setTargetAtTime(globalMasterVolume, audioCtx.currentTime, 0.02);
-			}
-		});
-
-		zoomSlider.addEventListener('input', (e) => {
-			currentScaleFactor = e.target.value / 100;
-			zoomVal.innerText = currentScaleFactor.toFixed(1) + "x";
-		});
-
-		function isPointInsidePolygon(point, vs) {
-			let x = point.x, y = point.y;
-			let inside = false;
-			for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-				let xi = vs[i].x + chassisOffset.x, yi = vs[i].y + chassisOffset.y;
-				let xj = vs[j].x + chassisOffset.x, yj = vs[j].y + chassisOffset.y;
-				if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
-			}
-			return inside;
-		}
-
-		class AudioEmitterNode {
-			constructor(x, y, voiceIndex, nativeFrequency) {
-				this.x = x; this.y = y;
-				this.voiceIndex = voiceIndex;
-				this.rgb = audioVoices[voiceIndex].color;
-				this.nativeFrequency = nativeFrequency;
-				this.isDragging = false; this.radius = 11;
-				
-				this.waveTimers = [0.0, 0.8, 1.6];
-				this.waveDuration = 2.4;
-				this.maxWaveRadius = 350;
-			}
-
-			update(dt) {
-				for (let i = 0; i < this.waveTimers.length; i++) {
-					this.waveTimers[i] += dt;
-					if (this.waveTimers[i] >= this.waveDuration) this.waveTimers[i] -= this.waveDuration;
-				}
-			}
-
-			drawWaves(innerMask, outerMask, isInside) {
-				const waveCanvas = document.createElement('canvas');
-				waveCanvas.width = WIDTH; waveCanvas.height = HEIGHT;
-				const waveCtx = waveCanvas.getContext('2d');
-
-				waveCtx.save();
-				waveCtx.translate(CENTER.x, CENTER.y);
-				waveCtx.scale(currentScaleFactor, currentScaleFactor);
-				waveCtx.translate(-CENTER.x, -CENTER.y);
-
-				this.waveTimers.forEach(timer => {
-					let progress = timer / this.waveDuration;
-					let r = 20 + (this.maxWaveRadius - 20) * progress;
-					let alpha = 0.5 * (1 - progress) * (globalMasterVolume * 1.5);
-					if (alpha > 0) {
-						waveCtx.beginPath();
-						waveCtx.arc(this.x, this.y, r, 0, Math.PI * 2);
-						waveCtx.lineWidth = Math.max(1.0, 5 * (1 - progress * 0.5)) / currentScaleFactor;
-						waveCtx.strokeStyle = `rgba(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]}, ${alpha})`;
-						waveCtx.stroke();
-					}
-				});
-				waveCtx.restore();
-
-				waveCanvas.getContext('2d').globalCompositeOperation = 'destination-in';
-				waveCanvas.getContext('2d').drawImage(isInside ? innerMask : outerMask, 0, 0);
-
-				ctx.save();
-				ctx.globalCompositeOperation = 'source-over';
-				ctx.drawImage(waveCanvas, 0, 0);
-				ctx.restore();
-			}
-
-			drawCore() {
-				let rX = CENTER.x + (this.x - CENTER.x) * currentScaleFactor;
-				let rY = CENTER.y + (this.y - CENTER.y) * currentScaleFactor;
-				let glowRadius = 70 * Math.sqrt(globalMasterVolume + 0.2) * currentScaleFactor;
-
-				let glowGrad = ctx.createRadialGradient(rX, rY, 0, rX, rY, glowRadius);
-				glowGrad.addColorStop(0, `rgba(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]}, ${0.4 * (globalMasterVolume + 0.2)})`);
-				glowGrad.addColorStop(1, `rgba(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]}, 0)`);
-				
-				ctx.fillStyle = glowGrad;
-				ctx.beginPath(); ctx.arc(rX, rY, glowRadius, 0, Math.PI * 2); ctx.fill();
-
-				ctx.fillStyle = '#ffffff';
-				ctx.shadowBlur = 10; ctx.shadowColor = `rgb(${this.rgb[0]}, ${this.rgb[1]}, ${this.rgb[2]})`;
-				ctx.beginPath(); ctx.arc(rX, rY, this.radius * Math.max(0.7, currentScaleFactor), 0, Math.PI * 2); ctx.fill();
-				ctx.shadowBlur = 0;
-			}
-
-			checkClick(mx, my) {
-				let rX = CENTER.x + (this.x - CENTER.x) * currentScaleFactor;
-				let rY = CENTER.y + (this.y - CENTER.y) * currentScaleFactor;
-				if (Math.hypot(mx - rX, my - rY) <= (this.radius * currentScaleFactor) + 12) {
-					this.isDragging = true;
-					return true;
-				}
-				return false;
-			}
-
-			handleDrag(mx, my) {
-				if (this.isDragging) {
-					this.x = (mx - CENTER.x) / currentScaleFactor + CENTER.x;
-					this.y = (my - CENTER.y) / currentScaleFactor + CENTER.y;
-				}
-			}
-		}
-
-		const soundNodes = [
-			new AudioEmitterNode(350, 260, 0, 220), // Bass Voice Node
-			new AudioEmitterNode(260, 400, 1, 440), // Mid Voice Node
-			new AudioEmitterNode(440, 400, 2, 880)  // Treble Voice Node
-		];
-
-		let dragType = null; 
-		let targetObj = null;
-		let dragStartMouse = { x: 0, y: 0 };
-		let dragStartOffset = { x: 0, y: 0 };
-
-		function getMousePos(e) {
-			const rect = canvas.getBoundingClientRect();
-			return {
-				x: (e.clientX - rect.left) * (canvas.width / rect.width),
-				y: (e.clientY - rect.top) * (canvas.height / rect.height)
-			};
-		}
-
-		canvas.addEventListener('mousedown', (e) => {
-			const mouse = getMousePos(e);
-			
-			for (let i = soundNodes.length - 1; i >= 0; i--) {
-				if (soundNodes[i].checkClick(mouse.x, mouse.y)) {
-					dragType = 'light';
-					targetObj = soundNodes[i];
-					return;
-				}
-			}
-
-			for (let i = 0; i < holeCenters.length; i++) {
-				let hX = CENTER.x + (holeCenters[i].x - CENTER.x) * currentScaleFactor;
-				let hY = CENTER.y + (holeCenters[i].y - CENTER.y) * currentScaleFactor;
-				if (Math.hypot(mouse.x - hX, mouse.y - hY) <= (holeRadius * currentScaleFactor) + 10) {
-					dragType = 'hole';
-					targetObj = holeCenters[i];
-					targetObj.isDragging = true;
-					return;
-				}
-			}
-
-			dragType = 'chassis';
-			isDraggingChassis = true;
-			dragStartMouse = { x: mouse.x, y: mouse.y };
-			dragStartOffset = { x: chassisOffset.x, y: chassisOffset.y };
-		});
-
-		window.addEventListener('mousemove', (e) => {
-			const mouse = getMousePos(e);
-
-			if (dragType === 'light' && targetObj) {
-				targetObj.handleDrag(mouse.x, mouse.y);
-			} 
-			else if (dragType === 'hole' && targetObj) {
-				targetObj.x = (mouse.x - CENTER.x) / currentScaleFactor + CENTER.x;
-				targetObj.y = (mouse.y - CENTER.y) / currentScaleFactor + CENTER.y;
-				targetObj.angle = Math.atan2(targetObj.y - (CENTER.y + chassisOffset.y), targetObj.x - (CENTER.x + chassisOffset.x));
-			} 
-			else if (dragType === 'chassis' && isDraggingChassis) {
-				let dx = (mouse.x - dragStartMouse.x) / currentScaleFactor;
-				let dy = (mouse.y - dragStartMouse.y) / currentScaleFactor;
-				chassisOffset.x = dragStartOffset.x + dx;
-				chassisOffset.y = dragStartOffset.y + dy;
-			}
-		});
-
-		window.addEventListener('mouseup', () => { 
-			if (dragType === 'light' && targetObj) targetObj.isDragging = false;
-			if (dragType === 'hole' && targetObj) targetObj.isDragging = false;
-			isDraggingChassis = false;
-			dragType = null;
-			targetObj = null;
-		});
-
-		let lastTime = performance.now();
-
-		function loop(currentTime) {
-			let dt = (currentTime - lastTime) / 1000.0;
-			lastTime = currentTime;
-			if (dt > 0.1) dt = 0.1;
-
-			soundNodes.forEach(node => node.update(dt));
-
-			ctx.fillStyle = '#03050a';
-			ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-			const innerMaskCanvas = document.createElement('canvas');
-			innerMaskCanvas.width = WIDTH; innerMaskCanvas.height = HEIGHT;
-			const imCtx = innerMaskCanvas.getContext('2d');
-			
-			imCtx.save();
-			imCtx.translate(CENTER.x, CENTER.y); imCtx.scale(currentScaleFactor, currentScaleFactor); imCtx.translate(-CENTER.x, -CENTER.y);
-			imCtx.fillStyle = '#ffffff';
-			imCtx.beginPath();
-			imCtx.moveTo(activePolygonPoints[0].x + chassisOffset.x, activePolygonPoints[0].y + chassisOffset.y);
-			for (let i = 1; i < activePolygonPoints.length; i++) {
-				imCtx.lineTo(activePolygonPoints[i].x + chassisOffset.x, activePolygonPoints[i].y + chassisOffset.y);
-			}
-			imCtx.closePath(); imCtx.fill();
-			holeCenters.forEach(hole => { imCtx.beginPath(); imCtx.arc(hole.x, hole.y, holeRadius, 0, Math.PI * 2); imCtx.fill(); });
-			imCtx.restore();
-
-			const outerMaskCanvas = document.createElement('canvas');
-			outerMaskCanvas.width = WIDTH; outerMaskCanvas.height = HEIGHT;
-			const omCtx = outerMaskCanvas.getContext('2d');
-			omCtx.fillStyle = '#ffffff'; omCtx.fillRect(0, 0, WIDTH, HEIGHT);
-			omCtx.globalCompositeOperation = 'destination-out';
-			omCtx.drawImage(innerMaskCanvas, 0, 0);
-
-			let rCenterX = CENTER.x + chassisOffset.x * currentScaleFactor;
-			let rCenterY = CENTER.y + chassisOffset.y * currentScaleFactor;
-			let bgGlow = ctx.createRadialGradient(rCenterX, rCenterY, 0, rCenterX, rCenterY, 350 * currentScaleFactor);
-			bgGlow.addColorStop(0, `rgba(14, 45, 50, ${0.25 * Math.min(1.0, globalMasterVolume + 0.1)})`);
-			bgGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-			ctx.fillStyle = bgGlow; ctx.beginPath(); ctx.arc(rCenterX, rCenterY, 350 * currentScaleFactor, 0, Math.PI * 2); ctx.fill();
-
-			soundNodes.forEach(node => {
-				let nodeInside = isPointInsidePolygon(node, activePolygonPoints);
-				node.drawWaves(innerMaskCanvas, outerMaskCanvas, nodeInside);
-			});
-
-			let nodeAccumulators = [0, 0, 0]; 
-
-			let calculatedLobeData = holeCenters.map((hole, hIdx) => {
-				let totalWeight = 0;
-				let calculatedFreq = 0;
-				let dominantNodeColor = [0, 0, 0];
-				let maxProximityWeight = 0;
-
-				soundNodes.forEach((node, nIdx) => {
-					let distance = Math.hypot(node.x - hole.x, node.y - hole.y);
-					let weight = 1 / (Math.pow(distance, 2.0) + 0.01);
-					
-					totalWeight += weight;
-					calculatedFreq += node.nativeFrequency * weight;
-					nodeAccumulators[nIdx] += weight;
-
-					if (weight > maxProximityWeight) {
-						maxProximityWeight = weight;
-						dominantNodeColor = node.rgb;
-					}
-				});
-
-				calculatedFreq = calculatedFreq / totalWeight;
-				if(isNaN(calculatedFreq)) calculatedFreq = 440;
-
-				let displayAmp = Math.min(1.0, totalWeight * 300);
-
-				document.getElementById(`valHole${hIdx}`).innerText = Math.round(calculatedFreq) + " Hz";
-				document.getElementById(`hexHole${hIdx}`).innerText = displayAmp.toFixed(2);
-				document.getElementById(`entryHole${hIdx}`).style.borderLeft = `3px solid rgb(${dominantNodeColor[0]}, ${dominantNodeColor[1]}, ${dominantNodeColor[2]})`;
-
-				return { hole, rgb: dominantNodeColor, weightPower: displayAmp };
-			});
-
-			// SPATIAL AUDIO NODE SYNCHRONIZATION WITH LIVE STEREO PANNING
-			if (isAudioRunning && audioCtx) {
-				let combinedSum = nodeAccumulators[0] + nodeAccumulators[1] + nodeAccumulators[2];
-				if(combinedSum <= 0) combinedSum = 1;
-
-				soundNodes.forEach((node, nIdx) => {
-					let normalizedProximityVol = nodeAccumulators[nIdx] / combinedSum;
-					
-					let nodeInside = isPointInsidePolygon(node, activePolygonPoints);
-					if (!nodeInside) normalizedProximityVol *= 0.15;
-
-					audioVoices[nIdx].setVolume(normalizedProximityVol, audioCtx);
-
-					// Dynamic Stereo Panning Calculation based on relative Node canvas position
-					// Maps viewport domain range [50, 650] down to native panning vector values [-1.0, 1.0]
-					let panVal = (node.x - CENTER.x) / (WIDTH / 2);
-					audioVoices[nIdx].setPan(panVal, audioCtx);
-
-					// Update text readout metrics
-					let panPercentage = Math.abs(Math.round(panVal * 100));
-					let panText = panVal < -0.05 ? `${panPercentage}% Left` : (panVal > 0.05 ? `${panPercentage}% Right` : "Center");
-					document.getElementById(`panHole${nIdx}`).innerText = panText;
-
-					let pitchModOffset = ((CENTER.y - node.y) / HEIGHT) * (node.nativeFrequency * 0.3);
-					audioVoices[nIdx].setPitch(node.nativeFrequency + pitchModOffset, audioCtx);
-				});
-			}
-
-			// SONIC BEAM PROJECTORS
-			calculatedLobeData.forEach(data => {
-				let [r, g, b] = data.rgb;
-				let rStartX = CENTER.x + (data.hole.x - CENTER.x) * currentScaleFactor;
-				let rStartY = CENTER.y + (data.hole.y - CENTER.y) * currentScaleFactor;
-				
-				let beamLength = 1000; 
-				let endX = rStartX + Math.cos(data.hole.angle) * beamLength;
-				let endY = rStartY + Math.sin(data.hole.angle) * beamLength;
-
-				let beamAlpha = 0.1 + (data.weightPower * 0.4);
-
-				ctx.save();
-				ctx.globalCompositeOperation = 'screen';
-				ctx.shadowBlur = 15 * currentScaleFactor; ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
-				ctx.lineWidth = 8 * (globalMasterVolume + 0.3) * currentScaleFactor;
-				ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${beamAlpha})`;
-				ctx.beginPath(); ctx.moveTo(rStartX, rStartY); ctx.lineTo(endX, endY); ctx.stroke();
-
-				ctx.lineWidth = 3 * currentScaleFactor;
-				ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.8)`; ctx.stroke();
-
-				ctx.shadowBlur = 0; ctx.lineWidth = Math.max(1, 1.2 * currentScaleFactor);
-				ctx.strokeStyle = '#ffffff'; ctx.stroke();
-				ctx.restore();
-			});
-
-			// CHAMBER ISOLATION WALL REFLECTORS
-			ctx.lineWidth = 10 * currentScaleFactor;
-			ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-
-			for (let i = 0; i < activePolygonPoints.length; i++) {
-				let p1 = activePolygonPoints[i], p2 = activePolygonPoints[(i + 1) % activePolygonPoints.length];
-				let rP1X = CENTER.x + (p1.x + chassisOffset.x - CENTER.x) * currentScaleFactor;
-				let rP1Y = CENTER.y + (p1.y + chassisOffset.y - CENTER.y) * currentScaleFactor;
-				let rP2X = CENTER.x + (p2.x + chassisOffset.x - CENTER.x) * currentScaleFactor;
-				let rP2Y = CENTER.y + (p2.y + chassisOffset.y - CENTER.y) * currentScaleFactor;
-
-				let midX = (p1.x + p2.x) / 2 + chassisOffset.x;
-				let midY = (p1.y + p2.y) / 2 + chassisOffset.y;
-				let maxWeight = 0;
-				let closestColor = OUTLINE_BASE_COLOR;
-
-				soundNodes.forEach(node => {
-					let d = Math.hypot(node.x - midX, node.y - midY);
-					let weight = 1 / (Math.pow(d, 1.8) + 0.1);
-					if (weight > maxWeight) {
-						maxWeight = weight;
-						closestColor = node.rgb;
-					}
-				});
-
-				let mixFactor = Math.min(0.8, maxWeight * 120) * (globalMasterVolume + 0.2);
-				let r = Math.round(OUTLINE_BASE_COLOR[0] + (closestColor[0] - OUTLINE_BASE_COLOR[0]) * mixFactor);
-				let g = Math.round(OUTLINE_BASE_COLOR[1] + (closestColor[1] - OUTLINE_BASE_COLOR[1]) * mixFactor);
-				let b = Math.round(OUTLINE_BASE_COLOR[2] + (closestColor[2] - OUTLINE_BASE_COLOR[2]) * mixFactor);
-
-				ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
-				ctx.beginPath(); ctx.moveTo(rP1X, rP1Y); ctx.lineTo(rP2X, rP2Y); ctx.stroke();
-			}
-
-			// RE-RENDER EMITTER RECEIVER HUD HARDWARE
-			calculatedLobeData.forEach((data) => {
-				let [specR, specG, specB] = data.rgb;
-				let hole = data.hole;
-				let rX = CENTER.x + (hole.x - CENTER.x) * currentScaleFactor;
-				let rY = CENTER.y + (hole.y - CENTER.y) * currentScaleFactor;
-				let sHoleRadius = holeRadius * currentScaleFactor;
-
-				let edgeIllumination = data.weightPower;
-
-				let outR = Math.round(OUTLINE_BASE_COLOR[0] + (specR - OUTLINE_BASE_COLOR[0]) * edgeIllumination);
-				let outG = Math.round(OUTLINE_BASE_COLOR[1] + (specG - OUTLINE_BASE_COLOR[1]) * edgeIllumination);
-				let outB = Math.round(OUTLINE_BASE_COLOR[2] + (specB - OUTLINE_BASE_COLOR[2]) * edgeIllumination);
-
-				ctx.lineWidth = 3 * currentScaleFactor;
-				ctx.strokeStyle = `rgb(${outR}, ${outG}, ${outB})`;
-				ctx.beginPath(); ctx.arc(rX, rY, sHoleRadius + (3 * currentScaleFactor), 0, Math.PI * 2); ctx.stroke();
-
-				ctx.fillStyle = `rgb(${Math.round(8 + (specR - 8) * edgeIllumination * 0.35)}, ${Math.round(12 + (specG - 12) * edgeIllumination * 0.35)}, ${Math.round(24 + (specB - 24) * edgeIllumination * 0.35)})`;
-				ctx.beginPath(); ctx.arc(rX, rY, sHoleRadius, 0, Math.PI * 2); ctx.fill();
-				
-				if (edgeIllumination > 0.01) {
-					let innerGlow = ctx.createRadialGradient(rX, rY, 1, rX, rY, sHoleRadius);
-					innerGlow.addColorStop(0, `rgba(${specR}, ${specG}, ${specB}, ${edgeIllumination * 0.5})`);
-					innerGlow.addColorStop(1, 'rgba(0,0,0,0)');
-					ctx.fillStyle = innerGlow; ctx.beginPath(); ctx.arc(rX, rY, sHoleRadius, 0, Math.PI * 2); ctx.fill();
-				}
-			});
-
-			soundNodes.forEach(node => node.drawCore());
-			requestAnimationFrame(loop);
-		}
-
-		requestAnimationFrame(loop);
-	</script>
+<div class="dashboard">
+<div class="zoom-panel">
+<div class="zoom-label">Scale Factor</div>
+<div class="zoom-slider-container">
+<input type="range" id="zoomSlider" min="20" max="150" value="70">
+</div>
+<div class="zoom-value" id="zoomVal">0.7x</div>
+</div>
+
+<div class="main-panel">
+<header>
+<div class="header-text">
+<h1>Fully Decoupled Acoustic Resonance Engine</h1>
+<p>Multi-shape chamber • Dynamic sound spots • Laminar / Turbulent flow</p>
+</div>
+<button class="btn-audio-toggle" id="btnAudioToggle">Start Engine</button>
+</header>
+<div class="canvas-wrapper">
+<canvas id="resonanceCanvas" width="720" height="720"></canvas>
+</div>
+</div>
+
+<div class="sidebar">
+<div class="control-group">
+<div class="control-label"><span>Master Gain</span><span id="brightnessVal">50%</span></div>
+<div class="slider-container"><input type="range" id="brightnessSlider" min="0" max="100" value="50"></div>
+
+<div class="control-label">
+<span>Chamber Geometry (Multiple Paths Supported)</span>
+<button class="btn-reset btn-small" id="btnResetSVG">Reset</button>
+</div>
+<textarea id="svgPathInput" spellcheck="false" placeholder="M ... Z   (one path per line)"></textarea>
+
+<div class="control-label">
+<span>Sound Spots</span>
+<button class="btn-add btn-small" id="btnAddSpot">+ Add Spot</button>
+</div>
+<div class="data-display" id="spotsContainer">
+</div>
+
+<div class="control-label">
+<span>Resonance Holes</span>
+<button class="btn-add btn-small" id="btnAddHole" style="background:#00f0ff;">+ Add Hole</button>
+</div>
+<div class="data-display" id="holesContainer">
+</div>
+</div>
+
+<div class="sidebar-footer">
+Drag emitters &amp; holes • Multiple SVG paths supported • Real-time Hz manipulation
+</div>
+</div>
+</div>
+
+<script>
+// ====================== WEB AUDIO & CORE SETUP ======================
+let audioCtx = null;
+let masterGain = null;
+let isAudioRunning = false;
+
+class SoundVoice {
+constructor(frequency, fallbackColor, index) {
+this.baseFrequency = frequency;
+this.color = fallbackColor;
+this.index = index;
+this.osc = null; this.gainNode = null; this.pannerNode = null;
+this.waveType = 'sine';
+}
+init(ctx, destination) {
+this.osc = ctx.createOscillator();
+this.gainNode = ctx.createGain();
+this.pannerNode = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+this.osc.type = this.waveType;
+this.osc.frequency.setValueAtTime(this.baseFrequency, ctx.currentTime);
+this.gainNode.gain.setValueAtTime(0, ctx.currentTime);
+this.osc.connect(this.gainNode);
+if (this.pannerNode) {
+this.pannerNode.pan.setValueAtTime(0, ctx.currentTime);
+this.gainNode.connect(this.pannerNode);
+this.pannerNode.connect(destination);
+} else this.gainNode.connect(destination);
+this.osc.start();
+}
+setVolume(v, ctx) { if(this.gainNode) this.gainNode.gain.setTargetAtTime(v, ctx.currentTime, 0.03); }
+setPitch(f, ctx) { if(this.osc) this.osc.frequency.setTargetAtTime(Math.max(20, f), ctx.currentTime, 0.05); }
+setPan(p, ctx) { if(this.pannerNode) this.pannerNode.pan.setTargetAtTime(Math.max(-1, Math.min(1, p)), ctx.currentTime, 0.04); }
+setWaveType(t) { this.waveType = t; if(this.osc) this.osc.type = t; }
+}
+
+let audioVoices = [];
+let soundNodes = [];
+
+function createNewVoiceAndNode(customFreq) {
+const idx = soundNodes.length;
+const baseFreq = customFreq || (220 * Math.pow(2, idx % 3));
+const colors = [[240,0,100], [0,240,180], [180,0,255], [255,180,0], [0,180,255]];
+const voice = new SoundVoice(baseFreq, colors[idx % colors.length], idx);
+audioVoices.push(voice);
+
+if (audioCtx && isAudioRunning) {
+voice.init(audioCtx, masterGain);
+}
+
+const node = new AudioEmitterNode(
+CENTER.x + (Math.random()-0.5)*150,
+CENTER.y + (Math.random()-0.5)*150,
+idx,
+baseFreq
+);
+soundNodes.push(node);
+return node;
+}
+
+// ====================== CANVAS & GEOMETRY ======================
+const canvas = document.getElementById('resonanceCanvas');
+const ctx = canvas.getContext('2d');
+const WIDTH = canvas.width, HEIGHT = canvas.height;
+const CENTER = { x: WIDTH/2, y: HEIGHT/2 };
+
+// Optimized defaults to center the large user path
+let currentScaleFactor = 0.7;
+let globalMasterVolume = 0.5;
+let chassisOffset = { x: -110, y: -70 }; 
+let activeShapes = [];
+
+const DEFAULT_PATH_STRING = "M 447.543 42.707 C 503.485 47.125 570.579 78.448 598.716 127.264 C 628.597 179.106 629.034 242.795 600.288 295.275 C 589.068 315.759 583.123 338.75 583.096 362.105 C 583.068 385.25 588.902 408.028 600.006 428.335 C 623.791 471.834 669.073 499.267 718.64 500.312 C 778.464 501.574 833.409 533.831 863.356 585.634 C 910.57 667.307 882.545 771.822 800.835 818.971 C 720.239 865.478 617.256 838.863 569.11 759.235 C 543.462 716.816 497.083 691.299 447.525 692.44 C 424.387 692.972 401.755 699.332 381.714 710.909 C 361.481 722.596 344.495 739.2 332.38 759.18 C 301.356 810.347 245.983 841.825 186.145 841.858 C 91.808 841.91 15.31 765.382 15.332 671.044 C 15.353 577.989 89.897 502.111 182.932 500.232 C 232.49 499.231 318.483 385.25 318.478 362.105 C 318.473 338.739 312.562 315.741 301.286 295.276 C 256.377 213.775 284.808 111.297 365.379 64.741 C 385.574 53.072 424.571 45.406 447.543 42.707 Z";
+
+function parseMultiSVGPaths(dString) {
+activeShapes = [];
+const paths = dString.trim().split('\n').filter(Boolean);
+if (!paths.length) return;
+
+paths.forEach(d => {
+try {
+const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+pathEl.setAttribute("d", d.trim());
+svg.appendChild(pathEl);
+const len = pathEl.getTotalLength();
+const samples = 240;
+let pts = [];
+for (let i = 0; i < samples; i++) {
+const pt = pathEl.getPointAtLength(i / samples * len);
+pts.push({ x: pt.x, y: pt.y });
+}
+if (pts.length) activeShapes.push(pts);
+} catch(e) {}
+});
+}
+
+document.getElementById('svgPathInput').value = DEFAULT_PATH_STRING;
+parseMultiSVGPaths(DEFAULT_PATH_STRING);
+
+const holeCenters = [
+{ x: 340, y: 360, angle: 0, isDragging: false, flowType: 'laminar' },
+{ x: 230, y: 550, angle: 0, isDragging: false, flowType: 'turbulent' },
+{ x: 450, y: 180, angle: 0, isDragging: false, flowType: 'laminar' }
+];
+
+function isPointInsideAnyShape(point) {
+for (let shape of activeShapes) {
+let inside = false;
+const vs = shape;
+for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+const xi = vs[i].x + chassisOffset.x, yi = vs[i].y + chassisOffset.y;
+const xj = vs[j].x + chassisOffset.x, yj = vs[j].y + chassisOffset.y;
+if (((yi > point.y) !== (yj > point.y)) && 
+(point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi)) inside = !inside;
+}
+if (inside) return true;
+}
+return false;
+}
+
+// ====================== AUDIO EMITTERS ======================
+class AudioEmitterNode {
+constructor(x, y, voiceIndex, nativeFrequency) {
+this.x = x; this.y = y; this.voiceIndex = voiceIndex;
+this.rgb = audioVoices[voiceIndex].color;
+this.nativeFrequency = nativeFrequency;
+this.radius = 13;
+this.isDragging = false;
+this.waveTimers = [0, 0.7, 1.5];
+this.waveDuration = 2.8;
+this.maxWaveRadius = 380;
+this.flowType = 'laminar';
+}
+update(dt) {
+this.waveTimers.forEach((t,i) => {
+this.waveTimers[i] = (t + dt) % this.waveDuration;
+});
+}
+drawWaves(innerMask, outerMask) {
+const waveCanvas = document.createElement('canvas');
+waveCanvas.width = WIDTH; waveCanvas.height = HEIGHT;
+const wCtx = waveCanvas.getContext('2d');
+
+wCtx.save();
+wCtx.translate(CENTER.x, CENTER.y);
+wCtx.scale(currentScaleFactor, currentScaleFactor);
+wCtx.translate(-CENTER.x, -CENTER.y);
+
+this.waveTimers.forEach((timer) => {
+const progress = timer / this.waveDuration;
+let r = 25 + (this.maxWaveRadius - 25) * progress;
+let alpha = 0.6 * (1 - progress) * (globalMasterVolume * 1.4);
+
+wCtx.beginPath();
+wCtx.arc(this.x, this.y, r, 0, Math.PI*2);
+
+if (this.flowType === 'turbulent') {
+wCtx.lineWidth = (8 + Math.sin(timer*12) * 3) / currentScaleFactor;
+alpha *= (0.7 + Math.random()*0.3);
+} else {
+wCtx.lineWidth = Math.max(2, 6 * (1 - progress)) / currentScaleFactor;
+}
+
+wCtx.strokeStyle = `rgba(${this.rgb[0]},${this.rgb[1]},${this.rgb[2]},${alpha})`;
+wCtx.stroke();
+});
+wCtx.restore();
+
+wCtx.globalCompositeOperation = 'destination-in';
+wCtx.drawImage(isPointInsideAnyShape(this) ? innerMask : outerMask, 0, 0);
+
+ctx.save();
+ctx.globalCompositeOperation = 'source-over';
+ctx.drawImage(waveCanvas, 0, 0);
+ctx.restore();
+}
+drawCore() {
+const rX = CENTER.x + (this.x - CENTER.x) * currentScaleFactor;
+const rY = CENTER.y + (this.y - CENTER.y) * currentScaleFactor;
+const glowR = 75 * Math.sqrt(globalMasterVolume + 0.2) * currentScaleFactor;
+
+const grad = ctx.createRadialGradient(rX, rY, 0, rX, rY, glowR);
+grad.addColorStop(0, `rgba(${this.rgb[0]},${this.rgb[1]},${this.rgb[2]},${0.45 * (globalMasterVolume+0.2)})`);
+grad.addColorStop(1, 'transparent');
+
+ctx.fillStyle = grad;
+ctx.beginPath(); ctx.arc(rX, rY, glowR, 0, Math.PI*2); ctx.fill();
+
+ctx.shadowBlur = 12; ctx.shadowColor = `rgb(${this.rgb.join(',')})`;
+ctx.fillStyle = '#fff';
+ctx.beginPath(); ctx.arc(rX, rY, this.radius * Math.max(0.8, currentScaleFactor), 0, Math.PI*2); ctx.fill();
+ctx.shadowBlur = 0;
+}
+}
+
+// Initial Generation
+for (let i = 0; i < 3; i++) createNewVoiceAndNode();
+
+// ====================== UI SETUP ======================
+const brightnessSlider = document.getElementById('brightnessSlider');
+const brightnessVal = document.getElementById('brightnessVal');
+const zoomSlider = document.getElementById('zoomSlider');
+const zoomVal = document.getElementById('zoomVal');
+const svgPathInput = document.getElementById('svgPathInput');
+const spotsContainer = document.getElementById('spotsContainer');
+const holesContainer = document.getElementById('holesContainer');
+
+brightnessSlider.addEventListener('input', e => {
+brightnessVal.textContent = e.target.value + "%";
+globalMasterVolume = e.target.value / 100;
+if (masterGain) masterGain.gain.setTargetAtTime(globalMasterVolume, audioCtx?.currentTime || 0, 0.02);
+});
+
+zoomSlider.addEventListener('input', e => {
+currentScaleFactor = e.target.value / 100;
+zoomVal.textContent = currentScaleFactor.toFixed(1) + "x";
+});
+
+svgPathInput.addEventListener('input', () => parseMultiSVGPaths(svgPathInput.value));
+
+document.getElementById('btnResetSVG').addEventListener('click', () => {
+chassisOffset = { x: -110, y: -70 };
+svgPathInput.value = DEFAULT_PATH_STRING;
+parseMultiSVGPaths(svgPathInput.value);
+});
+
+document.getElementById('btnAddSpot').addEventListener('click', () => {
+createNewVoiceAndNode();
+renderSpotControls();
+});
+
+document.getElementById('btnAddHole').addEventListener('click', () => {
+holeCenters.push({
+x: CENTER.x + (Math.random() - 0.5) * 150,
+y: CENTER.y + (Math.random() - 0.5) * 150,
+angle: 0,
+isDragging: false,
+flowType: 'laminar'
+});
+renderHoleControls();
+});
+
+document.getElementById('btnAudioToggle').addEventListener('click', () => {
+if (!audioCtx) {
+audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+masterGain = audioCtx.createGain();
+masterGain.gain.setValueAtTime(globalMasterVolume, audioCtx.currentTime);
+masterGain.connect(audioCtx.destination);
+audioVoices.forEach(v => v.init(audioCtx, masterGain));
+}
+if (audioCtx.state === 'suspended') {
+audioCtx.resume();
+document.getElementById('btnAudioToggle').classList.add('running');
+document.getElementById('btnAudioToggle').textContent = "Stop Engine";
+isAudioRunning = true;
+} else {
+audioCtx.suspend();
+document.getElementById('btnAudioToggle').classList.remove('running');
+document.getElementById('btnAudioToggle').textContent = "Start Engine";
+isAudioRunning = false;
+}
+});
+
+// ====================== CONTROL PANELS RENDERERS ======================
+function renderSpotControls() {
+spotsContainer.innerHTML = '';
+soundNodes.forEach((node, i) => {
+const div = document.createElement('div');
+div.className = 'data-entry';
+div.style.borderLeftColor = `rgb(${node.rgb.join(',')})`;
+div.innerHTML = `
+<div class="data-row">
+<span>Spot ${i+1}</span> 
+<input type="number" class="freq-input" data-idx="${i}" min="20" max="2000" value="${Math.round(node.nativeFrequency)}">
+</div>
+<div class="data-row">
+<span>Wave</span>
+<select class="tone-select" data-idx="${i}">
+<option value="sine">Sine</option>
+<option value="square">Square</option>
+<option value="triangle">Triangle</option>
+<option value="sawtooth">Sawtooth</option>
+</select>
+</div>
+<div class="data-row">
+<span>Flow</span>
+<select class="flow-select" data-idx="${i}">
+<option value="laminar">Laminar</option>
+<option value="turbulent">Turbulent</option>
+</select>
+</div>
+<div class="data-row"><span>Pan</span> <span id="pan${i}">Center</span></div>
+<button class="btn-remove btn-small" data-idx="${i}">Remove</button>
+`;
+spotsContainer.appendChild(div);
+
+const freqInp = div.querySelector('.freq-input');
+freqInp.addEventListener('input', (e) => {
+let val = parseFloat(e.target.value) || 220;
+node.nativeFrequency = val;
+audioVoices[i].baseFrequency = val;
+});
+
+div.querySelectorAll('select').forEach(sel => {
+sel.value = sel.classList.contains('tone-select') ? audioVoices[i].waveType : node.flowType;
+sel.addEventListener('change', () => {
+if (sel.classList.contains('tone-select')) {
+audioVoices[i].setWaveType(sel.value);
+} else {
+node.flowType = sel.value;
+}
+});
+});
+
+div.querySelector('.btn-remove').addEventListener('click', () => {
+if (soundNodes.length <= 1) return;
+if (audioVoices[i] && audioVoices[i].osc) {
+try { audioVoices[i].osc.stop(); } catch(e){}
+}
+soundNodes.splice(i, 1);
+audioVoices.splice(i, 1);
+soundNodes.forEach((n, idx) => n.voiceIndex = idx);
+audioVoices.forEach((v, idx) => v.index = idx);
+renderSpotControls();
+});
+});
+}
+
+function renderHoleControls() {
+holesContainer.innerHTML = '';
+holeCenters.forEach((hole, i) => {
+const div = document.createElement('div');
+div.className = 'data-entry';
+div.style.borderLeftColor = hole.flowType === 'turbulent' ? '#ff6688' : '#44ffcc';
+div.innerHTML = `
+<div class="data-row"><span>Hole ${i+1}</span> <span id="freqHole${i}">--- Hz</span></div>
+<div class="data-row">
+<span>Acoustics</span>
+<select class="flow-select" data-hidx="${i}">
+<option value="laminar">Laminar</option>
+<option value="turbulent">Turbulent</option>
+</select>
+</div>
+<div class="data-row"><span>Sensor Amp</span> <span class="hex-badge" id="ampHole${i}">0.00</span></div>
+<button class="btn-remove btn-small" data-hidx="${i}">Remove</button>
+`;
+holesContainer.appendChild(div);
+
+const sel = div.querySelector('.flow-select');
+sel.value = hole.flowType;
+sel.addEventListener('change', () => {
+hole.flowType = sel.value;
+div.style.borderLeftColor = hole.flowType === 'turbulent' ? '#ff6688' : '#44ffcc';
+});
+
+div.querySelector('.btn-remove').addEventListener('click', () => {
+if (holeCenters.length <= 1) return;
+holeCenters.splice(i, 1);
+renderHoleControls();
+});
+});
+}
+
+renderSpotControls();
+renderHoleControls();
+
+// ====================== INTERACTION INTERFACE ======================
+let dragType = null, targetObj = null, dragStart = {x:0,y:0};
+
+function getMousePos(e) {
+const rect = canvas.getBoundingClientRect();
+return {
+x: (e.clientX - rect.left) * (WIDTH / rect.width),
+y: (e.clientY - rect.top) * (HEIGHT / rect.height)
+};
+}
+
+canvas.addEventListener('mousedown', e => {
+const mouse = getMousePos(e);
+
+for (let i = soundNodes.length-1; i >= 0; i--) {
+const n = soundNodes[i];
+const rX = CENTER.x + (n.x - CENTER.x) * currentScaleFactor;
+const rY = CENTER.y + (n.y - CENTER.y) * currentScaleFactor;
+if (Math.hypot(mouse.x - rX, mouse.y - rY) < n.radius * currentScaleFactor + 18) {
+dragType = 'sound'; targetObj = n; return;
+}
+}
+
+for (let i = holeCenters.length-1; i >= 0; i--) {
+const h = holeCenters[i];
+const hx = CENTER.x + (h.x - CENTER.x) * currentScaleFactor;
+const hy = CENTER.y + (h.y - CENTER.y) * currentScaleFactor;
+if (Math.hypot(mouse.x - hx, mouse.y - hy) < 30 * currentScaleFactor) {
+dragType = 'hole'; targetObj = h; return;
+}
+}
+
+dragType = 'chassis';
+dragStart = {x: mouse.x, y: mouse.y};
+});
+
+window.addEventListener('mousemove', e => {
+const mouse = getMousePos(e);
+if (dragType === 'sound' && targetObj) {
+targetObj.x = CENTER.x + (mouse.x - CENTER.x) / currentScaleFactor;
+targetObj.y = CENTER.y + (mouse.y - CENTER.y) / currentScaleFactor;
+} else if (dragType === 'hole' && targetObj) {
+targetObj.x = CENTER.x + (mouse.x - CENTER.x) / currentScaleFactor;
+targetObj.y = CENTER.y + (mouse.y - CENTER.y) / currentScaleFactor;
+targetObj.angle = Math.atan2(targetObj.y - CENTER.y, targetObj.x - CENTER.x);
+} else if (dragType === 'chassis') {
+chassisOffset.x += (mouse.x - dragStart.x) / currentScaleFactor;
+chassisOffset.y += (mouse.y - dragStart.y) / currentScaleFactor;
+dragStart = {x: mouse.x, y: mouse.y};
+}
+});
+
+window.addEventListener('mouseup', () => { dragType = null; targetObj = null; });
+
+// ====================== ENGINE LOOP ======================
+let lastTime = performance.now();
+
+function loop(now) {
+const dt = Math.min((now - lastTime)/1000, 0.1);
+lastTime = now;
+
+soundNodes.forEach(n => n.update(dt));
+
+ctx.fillStyle = '#03050a';
+ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+const innerMask = document.createElement('canvas');
+innerMask.width = WIDTH; innerMask.height = HEIGHT;
+const imCtx = innerMask.getContext('2d');
+imCtx.save();
+imCtx.translate(CENTER.x, CENTER.y);
+imCtx.scale(currentScaleFactor, currentScaleFactor);
+imCtx.translate(-CENTER.x, -CENTER.y);
+imCtx.fillStyle = '#fff';
+activeShapes.forEach(shape => {
+if(shape.length === 0) return;
+imCtx.beginPath();
+imCtx.moveTo(shape[0].x + chassisOffset.x, shape[0].y + chassisOffset.y);
+for (let i = 1; i < shape.length; i++) {
+imCtx.lineTo(shape[i].x + chassisOffset.x, shape[i].y + chassisOffset.y);
+}
+imCtx.closePath();
+imCtx.fill();
+});
+imCtx.restore();
+
+const outerMask = document.createElement('canvas');
+outerMask.width = WIDTH; outerMask.height = HEIGHT;
+const omCtx = outerMask.getContext('2d');
+omCtx.fillStyle = '#fff';
+omCtx.fillRect(0,0,WIDTH,HEIGHT);
+omCtx.globalCompositeOperation = 'destination-out';
+omCtx.drawImage(innerMask, 0, 0);
+
+const bgX = CENTER.x + chassisOffset.x * currentScaleFactor;
+const bgY = CENTER.y + chassisOffset.y * currentScaleFactor;
+const bgGrad = ctx.createRadialGradient(bgX, bgY, 0, bgX, bgY, 420 * currentScaleFactor);
+bgGrad.addColorStop(0, `rgba(20,60,70,${0.3*globalMasterVolume})`);
+bgGrad.addColorStop(1, 'transparent');
+ctx.fillStyle = bgGrad;
+ctx.beginPath(); ctx.arc(bgX, bgY, 420 * currentScaleFactor, 0, Math.PI*2); ctx.fill();
+
+soundNodes.forEach(node => node.drawWaves(innerMask, outerMask));
+
+const nodeAccum = new Array(soundNodes.length).fill(0);
+
+holeCenters.forEach((hole, hIdx) => {
+let totalW = 0, freqSum = 0;
+
+soundNodes.forEach((node, nIdx) => {
+const d = Math.hypot(node.x - hole.x, node.y - hole.y);
+const w = 1 / (d*d + 0.005);
+totalW += w;
+freqSum += node.nativeFrequency * w;
+nodeAccum[nIdx] += w;
+});
+
+const calcFreq = totalW ? freqSum / totalW : 440;
+const amp = Math.min(1.2, totalW * 180);
+
+const fEl = document.getElementById(`freqHole${hIdx}`);
+const aEl = document.getElementById(`ampHole${hIdx}`);
+if (fEl) fEl.textContent = Math.round(calcFreq) + " Hz";
+if (aEl) aEl.textContent = amp.toFixed(2);
+});
+
+if (isAudioRunning && audioCtx) {
+const totalSum = nodeAccum.reduce((a,b)=>a+b,0) || 1;
+soundNodes.forEach((node, i) => {
+if(!audioVoices[i]) return;
+const vol = Math.min(1, nodeAccum[i] / totalSum);
+const inside = isPointInsideAnyShape(node);
+audioVoices[i].setVolume(inside ? vol : vol * 0.12, audioCtx);
+
+const pan = (node.x - CENTER.x) / (WIDTH * 0.6);
+audioVoices[i].setPan(pan, audioCtx);
+
+const pitchShift = (CENTER.y - node.y) / HEIGHT * 180;
+audioVoices[i].setPitch(node.nativeFrequency + pitchShift, audioCtx);
+
+const panEl = document.getElementById(`pan${i}`);
+if (panEl) {
+const p = Math.round(pan * 100);
+panEl.textContent = p < -8 ? `${-p}% L` : p > 8 ? `${p}% R` : "Center";
+}
+});
+}
+
+ctx.save();
+ctx.translate(CENTER.x, CENTER.y);
+ctx.scale(currentScaleFactor, currentScaleFactor);
+ctx.translate(-CENTER.x, -CENTER.y);
+ctx.strokeStyle = 'rgba(60,90,120,0.75)';
+ctx.lineWidth = 5;
+activeShapes.forEach(shape => {
+if(shape.length === 0) return;
+ctx.beginPath();
+ctx.moveTo(shape[0].x + chassisOffset.x, shape[0].y + chassisOffset.y);
+for (let i = 1; i < shape.length; i++) ctx.lineTo(shape[i].x + chassisOffset.x, shape[i].y + chassisOffset.y);
+ctx.closePath();
+ctx.stroke();
+});
+ctx.restore();
+
+holeCenters.forEach(h => {
+const hx = CENTER.x + (h.x - CENTER.x) * currentScaleFactor;
+const hy = CENTER.y + (h.y - CENTER.y) * currentScaleFactor;
+ctx.beginPath();
+ctx.arc(hx, hy, 24 * currentScaleFactor, 0, Math.PI*2);
+ctx.fillStyle = '#0a101f';
+ctx.fill();
+ctx.strokeStyle = h.flowType === 'turbulent' ? '#ff6688' : '#44ffcc';
+ctx.lineWidth = 3 * currentScaleFactor;
+ctx.stroke();
+});
+
+soundNodes.forEach(n => n.drawCore());
+
+requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
 </body>
 </html>
